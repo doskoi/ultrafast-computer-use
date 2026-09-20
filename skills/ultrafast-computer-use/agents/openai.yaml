@@ -1,5 +1,5 @@
 interface:
-  display_name: "Jev Computer Use"
+  display_name: "Ultrafast Computer Use"
   short_description: "Automatically prefer local Laya for Computer Use actions"
   default_prompt: "Navigate this interface with automatic local Laya action selection."
 policy:

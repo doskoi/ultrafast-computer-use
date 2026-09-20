@@ -16,6 +16,7 @@ export {
   snapshotFromAccessibility,
 } from "./ax.js";
 export {
+  UltrafastPolicy,
   JevPolicy,
   type Questions,
   type SystemOneClientLike,

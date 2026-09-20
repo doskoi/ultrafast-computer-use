@@ -39,7 +39,7 @@ export class CuaComputer implements ComputerDriver {
       element.index === decision.targetIndex
       && element.operations.includes(decision.operation as ElementOperation)
     ));
-    if (target === undefined) throw new Error("Jev selected an element outside the fresh safe action space");
+    if (target === undefined) throw new Error("Ultrafast selected an element outside the fresh safe action space");
     if (decision.operation === "CLICK") {
       await this.surface.click(decision.targetIndex);
       return;

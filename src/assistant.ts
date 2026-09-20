@@ -44,7 +44,7 @@ export class ComputerUseAssistant {
       };
     }
     if (decision.operation === "BLOCKED") {
-      return { ...base, status: "blocked", reason: "Jev found no supported safe navigation action" };
+      return { ...base, status: "blocked", reason: "Ultrafast found no supported safe navigation action" };
     }
     if (options.execute !== true) return { ...base, status: "suggested" };
     if (decision.executionProbability < minProbability) {

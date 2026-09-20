@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { resolve, sep } from "node:path";
 
 import { snapshotFromAccessibility } from "./ax.js";
-import { JevPolicy, type SystemOneClientLike } from "./policy.js";
+import { UltrafastPolicy, type SystemOneClientLike } from "./policy.js";
 import { OPERATIONS, type HistoryEntry } from "./types.js";
 
 export const REQUEST_VERSION = "jev-computer-use.request.v1";
@@ -75,7 +75,7 @@ export async function decideRequest(
   client?: SystemOneClientLike,
 ): Promise<Record<string, unknown>> {
   const snapshot = snapshotFromAccessibility(request.app, request.accessibilityText);
-  const policy = new JevPolicy(client);
+  const policy = new UltrafastPolicy(client);
   try {
     const decision = await policy.decide(snapshot, request.goal, request.history);
     return {

@@ -20,7 +20,7 @@ export interface SkyLike {
 
 export class StaleSnapshotError extends Error {
   constructor() {
-    super("The accessibility tree changed after Jev made its decision; no UI action was executed");
+    super("The accessibility tree changed after Ultrafast made its decision; no UI action was executed");
     this.name = "StaleSnapshotError";
   }
 }
@@ -56,7 +56,7 @@ export class SkyComputer {
       if (decision.targetIndex === null || !current.elements.some((item) => (
         item.index === decision.targetIndex && item.operations.includes("CLICK")
       ))) {
-        throw new Error("Jev selected an element that is not present in the fresh safe action space");
+        throw new Error("Ultrafast selected an element that is not present in the fresh safe action space");
       }
       await this.sky.click({ app: this.app, element_index: decision.targetIndex });
       return;
@@ -73,7 +73,7 @@ export class SkyComputer {
         item.index === decision.targetIndex
         && item.operations.includes(decision.operation as ElementOperation)
       ))) {
-        throw new Error("Jev selected a scroll target that is not present in the fresh safe action space");
+        throw new Error("Ultrafast selected a scroll target that is not present in the fresh safe action space");
       }
       await this.sky.scroll({ app: this.app, element_index: decision.targetIndex, direction, pages: 1 });
       return;

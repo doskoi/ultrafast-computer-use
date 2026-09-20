@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { snapshotFromAccessibility } from "../src/ax.js";
-import { JevPolicy, type SystemOneClientLike, type SystemOneResponse } from "../src/policy.js";
+import { UltrafastPolicy, type SystemOneClientLike, type SystemOneResponse } from "../src/policy.js";
 
 const SNAPSHOT = snapshotFromAccessibility("Preview", `AXWindow "Reports"
   AXButton "Open report" [element_index=17] x=10 y=20
@@ -33,10 +33,10 @@ const OPERATIONS = {
   BLOCKED: 0.03,
 };
 
-describe("Jev policy", () => {
+describe("Ultrafast policy", () => {
   it("uses one speculative request and consumes only the selected operation target", async () => {
     const client = new FakeClient({
-      model: "jev-test",
+      model: "ultrafast-test",
       answers: {
         operation: selected("CLICK", OPERATIONS),
         click_target: selected("17", { "17": 1 }),
@@ -48,13 +48,13 @@ describe("Jev policy", () => {
       },
     });
 
-    const decision = await new JevPolicy(client).decide(SNAPSHOT, "Open the report", []);
+    const decision = await new UltrafastPolicy(client).decide(SNAPSHOT, "Open the report", []);
 
     expect(client.calls).toHaveLength(1);
     expect(decision.operation).toBe("CLICK");
     expect(decision.targetIndex).toBe(17);
     expect(decision.executionProbability).toBe(0.8);
-    expect(decision.model).toBe("jev-test");
+    expect(decision.model).toBe("ultrafast-test");
     const call = client.calls[0] as { state: unknown; questions: Record<string, unknown> };
     expect(Object.keys(call.questions)).toEqual(expect.arrayContaining([
       "operation", "goal_complete", "click_target", "scroll_down_target",
@@ -72,7 +72,7 @@ describe("Jev policy", () => {
       },
     });
 
-    await expect(new JevPolicy(client).decide(SNAPSHOT, "Open the report", []))
+    await expect(new UltrafastPolicy(client).decide(SNAPSHOT, "Open the report", []))
       .rejects.toThrow("Invalid typed-decision choice response");
   });
 
@@ -85,7 +85,7 @@ describe("Jev policy", () => {
       },
     });
 
-    const decision = await new JevPolicy(client).decide(snapshot, "Open the report", []);
+    const decision = await new UltrafastPolicy(client).decide(snapshot, "Open the report", []);
 
     expect(decision.operation).toBe("BLOCKED");
     const questions = (client.calls[0] as { questions: Record<string, unknown> }).questions;

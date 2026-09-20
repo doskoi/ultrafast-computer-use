@@ -1,7 +1,7 @@
-# Jev Computer Use Assistant
+# Ultrafast Computer Use Assistant
 
 这是一个独立、可复用的 Computer Use 导航库。它读取 OpenAI Computer Use 的无障碍树，把当前
-`element_index` 转成有限动作空间，再让本地 Laya Jev 判断下一步操作及目标。
+`element_index` 转成有限动作空间，再让本地 Laya Ultrafast 判断下一步操作及目标。
 
 设计参考 `browser-use/jev-ultrafast` 的
 [`1231850a`](https://github.com/browser-use/jev-ultrafast/tree/1231850a0bf1a0c0341fe408ef1668dbbfdfac46)：
@@ -11,8 +11,8 @@
 - 代码只校验并读取被选中操作对应的目标分支；
 - 执行前再次读取完整页面，页面变化就拒绝使用旧索引。
 
-Jev 不操作界面。Computer Use 负责观察和执行，Jev 只从代码给出的当前候选里做语义判断。
-具体调用在 `JevPolicy.decide()`：通过本地 `laya-mlx` 的 Python worker 执行 typed decision。
+Ultrafast 不操作界面。Computer Use 负责观察和执行，Ultrafast 只从代码给出的当前候选里做语义判断。
+具体调用在 `UltrafastPolicy.decide()`：通过本地 `laya-mlx` 的 Python worker 执行 typed decision。
 
 ## 安装
 
@@ -28,7 +28,7 @@ export LAYA_MLX_PYTHON=/Users/sj/projects/laya-mlx/.venv/bin/python
 # 可填本地 checkpoint 目录；不填时 laya-mlx 会按默认模型 ID 下载一次权重。
 export LAYA_MLX_MODEL=/absolute/path/to/laya-checkpoint
 
-cd /Users/sj/projects/jev-computer-use
+cd /Users/sj/projects/ultrafast-computer-use
 npm install
 npm run build
 ```
@@ -37,10 +37,10 @@ npm run build
 
 ### 自动优先使用
 
-仓库包含一个可隐式触发的 Codex skill：`skills/jev-computer-use`。本机通过符号链接安装到：
+仓库包含一个可隐式触发的 Codex skill：`skills/ultrafast-computer-use`。本机通过符号链接安装到：
 
 ```text
-/Users/sj/.codex/skills/jev-computer-use
+/Users/sj/.codex/skills/ultrafast-computer-use
 ```
 
 这是机器级规则，不属于某个会话或某一个 Agent。任何读取同一 `CODEX_HOME` 的 Codex Agent 或
@@ -53,7 +53,7 @@ worker 常驻在一次 Node 进程内，模型只加载一次；请求结束后�
 其它远程 API。
 
 没有本地模型、本地 Laya 请求失败、结果概率不足或页面已经变化时，skill 会回退到 Computer Use 自己的
-本地判断。Jev 不会取代 Computer Use 的执行确认。
+本地判断。Ultrafast 不会取代 Computer Use 的执行确认。
 
 这个自动范围依赖 Codex 的全局指令和 skill 发现机制。其他不读取 `~/.codex/AGENTS.md` 与
 `~/.codex/skills` 的 Agent 运行时不会因此自动接入；它们需要在自己的 Computer Use 工具层调用本库。
@@ -64,13 +64,13 @@ worker 常驻在一次 Node 进程内，模型只加载一次；请求结束后�
 `CuaComputer`，不要把业务项目耦合到这个仓库：
 
 ```js
-const { CuaComputer, ComputerUseAssistant, JevPolicy } =
-  await import("file:///Users/sj/projects/jev-computer-use/dist/index.js");
+const { CuaComputer, ComputerUseAssistant, UltrafastPolicy } =
+  await import("file:///Users/sj/projects/ultrafast-computer-use/dist/index.js");
 
 const app = await cua.getApp("Preview");
 const assistant = new ComputerUseAssistant(
   new CuaComputer(app, "Preview"),
-  new JevPolicy(),
+  new UltrafastPolicy(),
 );
 
 // 默认只建议，不执行。

@@ -101,7 +101,7 @@ function elementCriteria(elements: readonly ComputerElement[]): Record<string, u
   }]));
 }
 
-export class JevPolicy {
+export class UltrafastPolicy {
   private client: SystemOneClientLike | null;
 
   constructor(client?: SystemOneClientLike, private readonly model = process.env.LAYA_MLX_MODEL ?? "aac6fef/laya-multilingual-mlx") {
@@ -212,3 +212,6 @@ export class JevPolicy {
     };
   }
 }
+
+/** @deprecated Use UltrafastPolicy. Kept as a compatibility export for existing callers. */
+export { UltrafastPolicy as JevPolicy };

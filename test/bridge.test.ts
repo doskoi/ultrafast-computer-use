@@ -21,7 +21,7 @@ const REQUEST = {
 class FakeClient implements SystemOneClientLike {
   async systemOne() {
     return {
-      model: "jev-test",
+      model: "ultrafast-test",
       answers: {
         operation: {
           choice: "CLICK",
@@ -43,7 +43,7 @@ describe("decision bridge", () => {
   });
 
   it("decides from a 0600 temp file and deletes it", async () => {
-    const directory = await mkdtemp(join(tmpdir(), "jev-computer-use-"));
+    const directory = await mkdtemp(join(tmpdir(), "ultrafast-computer-use-"));
     const requestFile = join(directory, "request.json");
     await writeFile(requestFile, JSON.stringify(REQUEST), { mode: 0o600 });
     await chmod(requestFile, 0o600);

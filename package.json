@@ -1,7 +1,7 @@
 {
-  "name": "jev-computer-use",
+  "name": "ultrafast-computer-use",
   "version": "0.1.0",
-  "description": "Jev-guided, guarded navigation for OpenAI Computer Use accessibility trees",
+  "description": "Ultrafast-guided, guarded navigation for OpenAI Computer Use accessibility trees",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,7 +12,7 @@
     }
   },
   "bin": {
-    "jev-computer-use": "./dist/cli.js"
+    "ultrafast-computer-use": "./dist/cli.js"
   },
   "files": [
     "dist",

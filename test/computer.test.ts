@@ -20,7 +20,7 @@ function decision(overrides: Partial<Decision> = {}): Decision {
     completionProbability: 0.1,
     executionProbability: 0.8,
     latencyMs: 5,
-    model: "jev-test",
+    model: "ultrafast-test",
     ...overrides,
   };
 }

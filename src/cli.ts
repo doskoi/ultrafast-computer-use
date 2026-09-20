@@ -12,7 +12,7 @@ async function main(): Promise<void> {
     write({
       version: RESPONSE_VERSION,
       ok: false,
-      error: { code: "usage", message: "Usage: jev-computer-use decide-file /tmp/request.json" },
+      error: { code: "usage", message: "Usage: ultrafast-computer-use decide-file /tmp/request.json" },
     });
     process.exitCode = 64;
     return;
