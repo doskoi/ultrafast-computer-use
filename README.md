@@ -41,12 +41,20 @@ export TYPESAFE_API_KEY='<只放在本机环境变量>'
 /Users/sj/.codex/skills/jev-computer-use
 ```
 
-全局 `~/.codex/AGENTS.md` 也要求 Computer Use 优先应用该 skill。它会把当前完整 AX 状态写入权限为
-`0600` 的随机临时文件，再通过交互式 zsh 读取并导出已有的 `TYPESAFE_API_KEY`，调用
-`TypeSafeClient.systemOne()`。请求结束后临时文件立即删除，key 不会打印或写入文件。
+这是机器级规则，不属于某个会话或某一个 Agent。任何读取同一 `CODEX_HOME` 的 Codex Agent 或
+subagent，只要通过 Computer Use 操作原生应用或浏览器，就应自动发现并优先应用该 skill；用户不需要
+在每个任务里再次指定。`~/.codex/AGENTS.md` 保存这条全局指令，skill 的
+`allow_implicit_invocation: true` 允许自动选择。
+
+skill 会把当前完整 AX 状态写入权限为 `0600` 的随机临时文件，再通过交互式 zsh 读取并导出已有的
+`TYPESAFE_API_KEY`，调用 `TypeSafeClient.systemOne()`。请求结束后临时文件立即删除，key 不会打印或
+写入文件。
 
 没有 key、Jev 请求失败、页面含有不应发送给第三方的敏感数据、结果概率不足或页面已经变化时，
 skill 会回退到 Computer Use 自己的本地判断。Jev 不会取代 Computer Use 的执行确认。
+
+这个自动范围依赖 Codex 的全局指令和 skill 发现机制。其他不读取 `~/.codex/AGENTS.md` 与
+`~/.codex/skills` 的 Agent 运行时不会因此自动接入；它们需要在自己的 Computer Use 工具层调用本库。
 
 ### 代码调用
 
