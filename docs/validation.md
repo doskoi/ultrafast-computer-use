@@ -10,7 +10,7 @@ npm run check
 
 The tests cover accessibility-index extraction, read-only filtering, redaction, geometry removal, one-request
 speculative target selection, strict probability validation, selected-branch validation, threshold handling,
-fresh-tree checks, and both the `@oai/sky` and current `cua` binding adapters.
+fresh-tree checks, temporary-file validation and deletion, and both the `@oai/sky` and current `cua` binding adapters.
 
 ## Live checks
 
@@ -25,10 +25,13 @@ index, probabilities, outcome, and latency here. Do not store screenshots or pri
 
 ## 2026-09-20
 
-- `npm run check`: 13 tests passed; TypeScript typecheck and package build passed.
+- `npm run check`: 16 tests passed; TypeScript typecheck and package build passed.
 - `npm pack --dry-run`: package assembled successfully with declarations, source maps, README, and license.
 - Real TypeSafe request: `jev-1.13.0` selected `CLICK` target `17` (`Open report`) with operation and target
   probability `1.0`; completion probability was `0.02`; request latency was `819 ms`.
+- Installed-skill bridge: interactive zsh exported the existing key without printing it, the bridge called
+  `jev-1.13.0`, selected target `17` with operation and target probability `1.0` in `1197 ms`, and deleted the
+  `0600` request file. A no-key run returned exit `78` and also deleted its request file.
 - Real Computer Use execution remains unverified in this session. Both initialization attempts stopped before any
   app interaction because the provided CUA tool reported `CUA_REPL_ENABLED_SURFACES is required`. No UI action was
   attempted, and synthetic adapter tests are not presented as live UI proof.

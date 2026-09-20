@@ -1,4 +1,12 @@
 export { ComputerUseAssistant, type DecisionPolicy } from "./assistant.js";
+export {
+  decideRequest,
+  decideRequestFile,
+  parseDecisionRequest,
+  REQUEST_VERSION,
+  RESPONSE_VERSION,
+  type DecisionRequest,
+} from "./bridge.js";
 export { CuaComputer, type CuaSurfaceLike } from "./cua.js";
 export {
   parseIndexedElements,

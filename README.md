@@ -12,6 +12,7 @@
 - 执行前再次读取完整页面，页面变化就拒绝使用旧索引。
 
 Jev 不操作界面。Computer Use 负责观察和执行，Jev 只从代码给出的当前候选里做语义判断。
+具体调用在 `JevPolicy.decide()`：通过官方 JavaScript SDK 执行 `TypeSafeClient.systemOne()`。
 
 ## 安装
 
@@ -31,6 +32,23 @@ export TYPESAFE_API_KEY='<只放在本机环境变量>'
 ```
 
 ## 在 Computer Use 中使用
+
+### 自动优先使用
+
+仓库包含一个可隐式触发的 Codex skill：`skills/jev-computer-use`。本机通过符号链接安装到：
+
+```text
+/Users/sj/.codex/skills/jev-computer-use
+```
+
+全局 `~/.codex/AGENTS.md` 也要求 Computer Use 优先应用该 skill。它会把当前完整 AX 状态写入权限为
+`0600` 的随机临时文件，再通过交互式 zsh 读取并导出已有的 `TYPESAFE_API_KEY`，调用
+`TypeSafeClient.systemOne()`。请求结束后临时文件立即删除，key 不会打印或写入文件。
+
+没有 key、Jev 请求失败、页面含有不应发送给第三方的敏感数据、结果概率不足或页面已经变化时，
+skill 会回退到 Computer Use 自己的本地判断。Jev 不会取代 Computer Use 的执行确认。
+
+### 代码调用
 
 当前 `cua` 运行时会通过 `cua.getApp()` 或 `cua.getTab()` 返回 app/tab binding。把 binding 注入
 `CuaComputer`，不要把业务项目耦合到这个仓库：

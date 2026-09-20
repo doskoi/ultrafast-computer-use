@@ -1,0 +1,6 @@
+interface:
+  display_name: "Jev Computer Use"
+  short_description: "Use Jev to choose safer Computer Use actions"
+  default_prompt: "Use $jev-computer-use to navigate this interface with Jev-backed action selection."
+policy:
+  allow_implicit_invocation: true

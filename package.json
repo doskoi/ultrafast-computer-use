@@ -11,6 +11,9 @@
       "import": "./dist/index.js"
     }
   },
+  "bin": {
+    "jev-computer-use": "./dist/cli.js"
+  },
   "files": [
     "dist",
     "README.md",
