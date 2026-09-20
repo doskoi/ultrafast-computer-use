@@ -73,7 +73,7 @@ describe("Jev policy", () => {
     });
 
     await expect(new JevPolicy(client).decide(SNAPSHOT, "Open the report", []))
-      .rejects.toThrow("Invalid TypeSafe choice response");
+      .rejects.toThrow("Invalid typed-decision choice response");
   });
 
   it("omits target operations that have no candidates", async () => {

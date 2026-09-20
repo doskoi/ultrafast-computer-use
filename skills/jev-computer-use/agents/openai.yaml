@@ -1,6 +1,6 @@
 interface:
   display_name: "Jev Computer Use"
-  short_description: "Automatically prefer Jev for Computer Use actions"
-  default_prompt: "Navigate this interface with automatic Jev-backed action selection."
+  short_description: "Automatically prefer local Laya for Computer Use actions"
+  default_prompt: "Navigate this interface with automatic local Laya action selection."
 policy:
   allow_implicit_invocation: true

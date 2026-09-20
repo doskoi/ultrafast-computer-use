@@ -16,6 +16,7 @@
   },
   "files": [
     "dist",
+    "python",
     "README.md",
     "LICENSE"
   ],
@@ -27,9 +28,6 @@
   },
   "engines": {
     "node": ">=20"
-  },
-  "dependencies": {
-    "@typesafe-ai/sdk": "0.6.0"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",

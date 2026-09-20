@@ -1,6 +1,6 @@
 ---
 name: jev-computer-use
-description: Automatically prefer TypeSafe Jev for indexed next-action selection whenever any Codex agent or subagent operates a native app or browser through OpenAI Computer Use. Fall back locally when Jev, its key, or a safe accessibility state is unavailable.
+description: Automatically prefer local Laya Jev for indexed next-action selection whenever any Codex agent or subagent operates a native app or browser through OpenAI Computer Use. Fall back locally when Laya, its model, or a safe accessibility state is unavailable.
 ---
 
 # Jev Computer Use
@@ -19,7 +19,7 @@ current indexed candidates.
 - Do not send screenshots, coordinates, selectors, commands, arbitrary input text, or credentials to Jev.
 - Do not send an accessibility tree containing private messages, private files, financial, medical, legal, HR,
   precise-location, account, authentication, or other sensitive content unless the user explicitly authorized that
-  specific data to be sent to TypeSafe. Use ordinary local Computer Use reasoning instead.
+  specific data to be sent to a model. Use ordinary local Computer Use reasoning instead.
 - Jev decisions never authorize an action. Apply the normal Computer Use confirmation policy at action time.
 - Jev's first action space is read-only navigation. If it returns `BLOCKED`, or the task needs typing or another
   excluded operation, continue with normal Computer Use reasoning and its confirmation rules.
@@ -69,9 +69,9 @@ current indexed candidates.
    /Users/sj/.codex/skills/jev-computer-use/scripts/decide-file.sh /tmp/jev-computer-use-REQUEST.json
    ```
 
-   The script opens interactive zsh, exports the existing `TYPESAFE_API_KEY` without printing it, calls
-   `TypeSafeClient.systemOne()`, and deletes the request file. Treat exit 78 or an `ok:false` response as Jev
-   unavailable and continue locally.
+   The script invokes the local `laya-mlx` worker and deletes the request file. Configure `LAYA_MLX_PATH`,
+   `LAYA_MLX_PYTHON`, and `LAYA_MLX_MODEL` before using the skill. Treat exit 78 or an `ok:false` response as
+   Jev unavailable and continue locally.
 5. Use a Jev action only when `executionProbability >= 0.55`. Accept `DONE` only when
    `operationProbability >= 0.55` and `completionProbability >= 0.85`. Low-probability, malformed, unsupported,
    or failed decisions fall back to local reasoning.

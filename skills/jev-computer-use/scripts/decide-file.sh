@@ -1,4 +1,4 @@
-#!/bin/zsh -i
+#!/bin/zsh
 
 set -eu
 
@@ -12,12 +12,6 @@ cleanup() {
   rm -- "$request_file" 2>/dev/null || true
 }
 trap cleanup EXIT
-
-if [[ -z "${TYPESAFE_API_KEY:-}" ]]; then
-  print -r -- '{"version":"jev-computer-use.response.v1","ok":false,"error":{"code":"typesafe_key_unavailable","message":"TYPESAFE_API_KEY is unavailable in interactive zsh"}}'
-  exit 78
-fi
-export TYPESAFE_API_KEY
 
 script_dir="${0:A:h}"
 repo_dir="${script_dir}/../../.."

@@ -15,7 +15,14 @@ export {
   sanitizeAccessibilityText,
   snapshotFromAccessibility,
 } from "./ax.js";
-export { JevPolicy, type SystemOneClientLike, type SystemOneResponse } from "./policy.js";
+export {
+  JevPolicy,
+  type Questions,
+  type SystemOneClientLike,
+  type SystemOneRequest,
+  type SystemOneResponse,
+} from "./policy.js";
+export { LayaClient, type LayaClientOptions } from "./laya.js";
 export {
   SkyComputer,
   StaleSnapshotError,

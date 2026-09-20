@@ -75,17 +75,22 @@ export async function decideRequest(
   client?: SystemOneClientLike,
 ): Promise<Record<string, unknown>> {
   const snapshot = snapshotFromAccessibility(request.app, request.accessibilityText);
-  const decision = await new JevPolicy(client).decide(snapshot, request.goal, request.history);
-  return {
-    version: RESPONSE_VERSION,
-    ok: true,
-    snapshot: {
-      app: snapshot.app,
-      fingerprint: snapshot.fingerprint,
-      safeElementCount: snapshot.elements.length,
-    },
-    decision,
-  };
+  const policy = new JevPolicy(client);
+  try {
+    const decision = await policy.decide(snapshot, request.goal, request.history);
+    return {
+      version: RESPONSE_VERSION,
+      ok: true,
+      snapshot: {
+        app: snapshot.app,
+        fingerprint: snapshot.fingerprint,
+        safeElementCount: snapshot.elements.length,
+      },
+      decision,
+    };
+  } finally {
+    if (client === undefined) policy.close();
+  }
 }
 
 export async function decideRequestFile(
