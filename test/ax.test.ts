@@ -17,6 +17,13 @@ AXWindow "Reports"
   [71] AXLink "Contact a@example.com or 13812345678"
 `;
 
+const REAL_CUA_TREE = `Window: "Example Domain", App: Safari.
+0 standard window Example Domain
+  4 HTML content Description: Example Domain, URL: example.com/
+    5 heading Example Domain, Value: 1
+    7 text This domain is for use in documentation examples without needing permission.
+    8 link Learn more, Value: iana.org/domains/example`;
+
 describe("accessibility parsing", () => {
   it("builds a bounded safe action space from common index formats", () => {
     const elements = parseIndexedElements(TREE);
@@ -44,6 +51,13 @@ describe("accessibility parsing", () => {
     const elements = parseIndexedElements('AXButton "Open border report" index=91');
 
     expect(elements.map((element) => element.index)).toEqual([91]);
+  });
+
+  it("parses the numbered accessibility lines emitted by real CUA bindings", () => {
+    const elements = parseIndexedElements(REAL_CUA_TREE);
+
+    expect(elements.map((element) => element.index)).toEqual([8]);
+    expect(elements[0]?.description).toContain("link Learn more");
   });
 
   it("fingerprints the complete observed tree while exposing only sanitized model text", () => {

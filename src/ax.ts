@@ -15,6 +15,7 @@ const INDEX_PATTERNS = [
   /\belementIndex\s*[:=]\s*["']?(\d+)/i,
   /\bindex\s*[:=]\s*["']?(\d+)/i,
   /\[(?:element[_ ]?index\s*[:=]\s*)?(\d+)]/i,
+  /^\s*(\d+)\s+(?=(?:(?:AX)?(?:button|link|scroll(?:able| area|bar)|menu item|tab))\b)/i,
   /^\s*(\d+)[).:]\s+(?=(?:AX)?[A-Za-z])/,
 ] as const;
 const SCROLLABLE = /\b(?:AXScrollArea|scrollable|scroll area|scrollview|scroll view)\b/i;
