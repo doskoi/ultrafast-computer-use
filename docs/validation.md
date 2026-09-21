@@ -1,5 +1,15 @@
 # Validation
 
+## Local runtime notes
+
+The Node package starts one long-lived local Python worker. Before a live check, set `LAYA_MLX_PATH` to the
+`laya-mlx` checkout and `LAYA_MLX_PYTHON` to the Python environment where that checkout is installed. Set
+`LAYA_MLX_MODEL` to a local checkpoint directory for offline validation; a model ID is also accepted, but the
+first load may download weights. This is local model inference, not a remote decision API.
+
+The direct code example in the README uses a machine-specific `file://` path. On another machine, replace it with
+that checkout's `dist/index.js` or install/link the package and import it by package name.
+
 ## Automated checks
 
 Run:

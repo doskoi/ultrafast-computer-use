@@ -25,13 +25,19 @@ uv sync
 
 export LAYA_MLX_PATH=/Users/sj/projects/laya-mlx
 export LAYA_MLX_PYTHON=/Users/sj/projects/laya-mlx/.venv/bin/python
-# 可填本地 checkpoint 目录；不填时 laya-mlx 会按默认模型 ID 下载一次权重。
+# 可填本地 checkpoint 目录；也可填 Hugging Face model ID。
+# 严格离线运行时必须填写已经下载好的本地目录。
 export LAYA_MLX_MODEL=/absolute/path/to/laya-checkpoint
 
 cd /Users/sj/projects/ultrafast-computer-use
 npm install
 npm run build
 ```
+
+`LAYA_MLX_PATH` 让 Python worker 能找到本地 checkout，`LAYA_MLX_PYTHON` 指定安装了
+`laya-mlx` 的 Python 环境。`LAYA_MLX_MODEL` 可以是本地 checkpoint 目录或 model ID；如果省略，默认
+使用 `aac6fef/laya-multilingual-mlx`，首次加载可能从 Hugging Face 下载权重。决策请求始终发给本地
+`laya-mlx` worker，不调用任何远程决策 API；要做到完全离线，先下载权重并使用本地目录。
 
 ## 在 Computer Use 中使用
 
@@ -83,6 +89,10 @@ const result = await assistant.step(
 );
 ```
 
+上面的 `file://` 示例指向本机 checkout 的绝对路径，只适用于该路径存在的机器。若调用方已经通过
+本地依赖安装或 link 了本包，应改用 `import { ... } from "ultrafast-computer-use"`；换机器时也要把
+路径改成实际的 `dist/index.js` 位置。
+
 仓库也提供 `SkyComputer`，适配直接注入的 `@oai/sky` 对象：
 
 ```js
@@ -102,6 +112,11 @@ const computer = new SkyComputer(sky, "Preview");
 
 自动执行默认要求操作和目标的最低概率都达到 `0.55`。`DONE` 同时要求操作概率达到该阈值，
 完成判断达到 `0.85`。这些是保守初值，应使用真实导航轨迹评估后再调整。
+
+真实 CUA 的无障碍树可能使用 `8 link Learn more` 这样的编号行，而不是带句点的编号。解析器只会把
+当前树中可确认的交互角色提升为候选；每次执行前仍必须重新抓取完整 AX 树并通过 freshness 校验。
+不要把包含私信、文件、账户或其它敏感内容的 AX 树发送给本地模型以外的服务，也不要把真实 AX dump
+或截图提交到 Git。
 
 ## 验证
 
