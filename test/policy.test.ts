@@ -59,10 +59,24 @@ describe("Ultrafast policy", () => {
     expect(Object.keys(firstCall.questions)).toEqual(["operation", "goal_complete"]);
     const secondCall = client.calls[1] as { state: unknown; questions: Record<string, unknown> };
     expect(Object.keys(secondCall.questions)).toEqual(["click_target"]);
-    expect(JSON.stringify(secondCall.state)).toContain('"index":"17"');
-    expect(JSON.stringify(secondCall.state)).not.toContain('"index":"51"');
+    expect(String(secondCall.state)).toContain("17:");
+    expect(String(secondCall.state)).not.toContain("51:");
     expect(JSON.stringify(firstCall.state)).not.toContain("x=10");
     expect(JSON.stringify(firstCall.state)).not.toContain("screenshot");
+    const operationQuestion = firstCall.questions.operation as {
+      instructions: unknown;
+      criteria: Record<string, unknown>;
+    };
+    expect(typeof operationQuestion.instructions).toBe("string");
+    expect(operationQuestion.instructions).toMatch(/^User goal: Open the report/);
+    expect(Object.values(operationQuestion.criteria).every((value) => typeof value === "string")).toBe(true);
+    const targetQuestion = secondCall.questions.click_target as {
+      instructions: unknown;
+      criteria: Record<string, unknown>;
+    };
+    expect(typeof targetQuestion.instructions).toBe("string");
+    expect(targetQuestion.instructions).toMatch(/^User goal: Open the report\nSelected operation: CLICK/);
+    expect(Object.values(targetQuestion.criteria).every((value) => typeof value === "string")).toBe(true);
   });
 
   it("rejects malformed distributions before an action can execute", async () => {

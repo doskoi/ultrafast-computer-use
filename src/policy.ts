@@ -44,6 +44,10 @@ interface NoulAnswer {
 export interface SystemOneResponse {
   readonly model?: string;
   readonly answers?: Record<string, unknown>;
+  readonly usage?: {
+    readonly input_tokens?: number;
+    readonly output_tokens?: number;
+  };
 }
 
 export interface SystemOneRequest {
@@ -115,11 +119,38 @@ function validatedChoice(answer: unknown, expected: ReadonlySet<string>): {
   return { selected: value.choice, probability: selectedProbability, confidence: value.confidence };
 }
 
-function elementCriteria(elements: readonly ComputerElement[]): Record<string, unknown> {
-  return Object.fromEntries(elements.map((element) => [String(element.index), {
-    description: element.description,
-    supported_operations: [...element.operations],
-  }]));
+function cleanAccessibilityText(value: string): string {
+  return value
+    .replace(/\bAX[A-Za-z0-9_]+\s*/g, "")
+    .replace(/\s*\[[^\]]*element_index\s*=\s*\d+\]\s*/gi, "")
+    .replace(/^\d+\s+/, "")
+    .replace(/["']/g, "")
+    .replace(/\s*·\s*/g, "; ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function layaDescription(value: string): string {
+  return (cleanAccessibilityText(value) || value).slice(0, 240);
+}
+
+function elementCriteria(
+  elements: readonly ComputerElement[],
+  provider: DecisionProviderName,
+): Record<string, string> {
+  return Object.fromEntries(elements.map((element) => [
+    String(element.index),
+    provider === "laya"
+      ? layaDescription(element.description)
+      : `${element.description} (supports ${element.operations.join(", ")})`,
+  ]));
+}
+
+function compactText(value: string, limit: number): string {
+  if (value.length <= limit) return value;
+  const head = Math.max(1, Math.floor(limit * 0.7));
+  const tail = Math.max(1, limit - head);
+  return `${value.slice(0, head)}\n...[truncated]...\n${value.slice(-tail)}`;
 }
 
 /** Adapter for the historical remote Jev / TypeSafe decision service. */
@@ -195,28 +226,59 @@ class TypedDecisionPolicy {
       SCROLL_LEFT: "Scroll left inside one current indexed horizontal scroll area.",
       SCROLL_RIGHT: "Scroll right inside one current indexed horizontal scroll area.",
     };
-    const operations: Record<string, unknown> = {
+    const operations: Record<string, string> = {
       ...Object.fromEntries([...targetGroups.keys()].map((operation) => [operation, descriptions[operation]])),
       WAIT: "Wait briefly because the current view is visibly loading or changing.",
-      DONE: "The current view visibly proves the complete goal is satisfied.",
-      BLOCKED: "No supported safe navigation action can advance the goal.",
+      DONE: "The current view visibly proves every part of the goal; do not use this just to open, click, or scroll.",
+      BLOCKED: "No supported safe navigation operation can advance the goal.",
     };
-    const stateFor = (elements: readonly ComputerElement[]) => ({
-      app: snapshot.app,
-      visible_accessibility_text: snapshot.modelText,
-      candidate_elements: elements.map((element) => ({
+    if (this.options.provider === "laya") {
+      for (const [operation, elements] of targetGroups) {
+        const available = elements.map((element) => layaDescription(element.description)).join("; ");
+        operations[operation] = `${descriptions[operation]} Available: ${available}`;
+      }
+    }
+    const stateFor = (elements: readonly ComputerElement[], includePageText = true) => {
+      const candidateElements = elements.map((element) => ({
         index: String(element.index),
         description: element.description,
         operations: element.operations,
-      })),
-      recent_actions: history.slice(-10),
-    });
+      }));
+      if (this.options.provider === "laya") {
+        // Laya accepts text states and its typed-decision checkpoint is more
+        // reliable when the prompt is not mixed with AX/JSON serialization.
+        // Target questions omit the full page text because their criteria
+        // already contain the complete selected candidate set.
+        const candidates = elements.map((element) => (
+          `${element.index}: ${layaDescription(element.description)} [${element.operations.join(", ")}]`
+        )).join("\n");
+        const stateLines = [
+          `App: ${snapshot.app}`,
+          `Candidate elements:\n${candidates || "(none)"}`,
+          ...(includePageText
+            ? [`Visible page text:\n${compactText(cleanAccessibilityText(snapshot.modelText), 1_600)}`]
+            : []),
+          ...(history.length > 0 ? [`Recent actions: ${JSON.stringify(history.slice(-4))}`] : []),
+        ];
+        return stateLines.join("\n");
+      }
+      return {
+        app: snapshot.app,
+        visible_accessibility_text: snapshot.modelText,
+        candidate_elements: candidateElements,
+        recent_actions: history.slice(-10),
+      };
+    };
     const state = stateFor(snapshot.elements);
     const questions: Questions = {
-      operation: { type: "choice", instructions: { goal, rules: NEXT_ACTION }, criteria: operations },
+      operation: {
+        type: "choice",
+        instructions: `User goal: ${goal}\n\n${NEXT_ACTION}`,
+        criteria: operations,
+      },
       goal_complete: {
         type: "noul",
-        instructions: { goal, question: COMPLETE },
+        instructions: `User goal: ${goal}\n\n${COMPLETE}`,
         criteria: {
           true: "The visible state proves every requested result.",
           false: "The goal is incomplete, ambiguous, loading, or only an entry point is visible.",
@@ -244,12 +306,12 @@ class TypedDecisionPolicy {
       const targetKey = `${operation.selected.toLowerCase()}_target`;
       const targetResponse = await client.systemOne({
         model: this.options.model,
-        state: stateFor(selectedTargets),
+        state: stateFor(selectedTargets, false),
         questions: {
           [targetKey]: {
             type: "choice",
-            instructions: { goal, operation: operation.selected, rules: TARGET },
-            criteria: elementCriteria(selectedTargets),
+            instructions: `User goal: ${goal}\nSelected operation: ${operation.selected}\n\n${TARGET}`,
+            criteria: elementCriteria(selectedTargets, this.options.provider),
           },
         },
       });
