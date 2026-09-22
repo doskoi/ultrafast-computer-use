@@ -34,7 +34,7 @@ const OPERATIONS = {
 };
 
 describe("Ultrafast policy", () => {
-  it("uses one speculative request and consumes only the selected operation target", async () => {
+  it("selects the operation first, then asks only for the selected operation target", async () => {
     const client = new FakeClient({
       model: "ultrafast-test",
       answers: {
@@ -50,17 +50,19 @@ describe("Ultrafast policy", () => {
 
     const decision = await new UltrafastPolicy(client).decide(SNAPSHOT, "Open the report", []);
 
-    expect(client.calls).toHaveLength(1);
+    expect(client.calls).toHaveLength(2);
     expect(decision.operation).toBe("CLICK");
     expect(decision.targetIndex).toBe(17);
     expect(decision.executionProbability).toBe(0.8);
     expect(decision.model).toBe("ultrafast-test");
-    const call = client.calls[0] as { state: unknown; questions: Record<string, unknown> };
-    expect(Object.keys(call.questions)).toEqual(expect.arrayContaining([
-      "operation", "goal_complete", "click_target", "scroll_down_target",
-    ]));
-    expect(JSON.stringify(call.state)).not.toContain("x=10");
-    expect(JSON.stringify(call.state)).not.toContain("screenshot");
+    const firstCall = client.calls[0] as { state: unknown; questions: Record<string, unknown> };
+    expect(Object.keys(firstCall.questions)).toEqual(["operation", "goal_complete"]);
+    const secondCall = client.calls[1] as { state: unknown; questions: Record<string, unknown> };
+    expect(Object.keys(secondCall.questions)).toEqual(["click_target"]);
+    expect(JSON.stringify(secondCall.state)).toContain('"index":"17"');
+    expect(JSON.stringify(secondCall.state)).not.toContain('"index":"51"');
+    expect(JSON.stringify(firstCall.state)).not.toContain("x=10");
+    expect(JSON.stringify(firstCall.state)).not.toContain("screenshot");
   });
 
   it("rejects malformed distributions before an action can execute", async () => {
@@ -88,6 +90,7 @@ describe("Ultrafast policy", () => {
     const decision = await new UltrafastPolicy(client).decide(snapshot, "Open the report", []);
 
     expect(decision.operation).toBe("BLOCKED");
+    expect(client.calls).toHaveLength(1);
     const questions = (client.calls[0] as { questions: Record<string, unknown> }).questions;
     expect(questions).not.toHaveProperty("click_target");
   });

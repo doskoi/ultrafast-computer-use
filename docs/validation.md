@@ -18,8 +18,8 @@ Run:
 npm run check
 ```
 
-The tests cover accessibility-index extraction, read-only filtering, redaction, geometry removal, one-request
-speculative target selection, strict probability validation, selected-branch validation, threshold handling,
+The tests cover accessibility-index extraction, read-only filtering, redaction, geometry removal, two-stage
+operation/target selection, strict probability validation, selected-branch validation, threshold handling,
 fresh-tree checks, temporary-file validation and deletion, and both the `@oai/sky` and current `cua` binding adapters.
 
 ## Live checks

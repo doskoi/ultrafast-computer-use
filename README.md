@@ -7,8 +7,8 @@
 [`1231850a`](https://github.com/browser-use/jev-ultrafast/tree/1231850a0bf1a0c0341fe408ef1668dbbfdfac46)：
 
 - 每一步都从当前完整无障碍树重新生成动作空间；
-- 一次 System One 请求同时判断操作、各操作的候选目标和完成状态；
-- 代码只校验并读取被选中操作对应的目标分支；
+- 第一次 System One 请求用 `Choice` 判断操作、用 `Noul` 判断完成状态；
+- 如果操作需要目标，第二次请求只给该操作的候选目标，避免无关目标分支扩大 token；
 - 执行前再次读取完整页面，页面变化就拒绝使用旧索引。
 
 Ultrafast 不操作界面。Computer Use 负责观察和执行，Ultrafast 只从代码给出的当前候选里做语义判断。
@@ -164,4 +164,5 @@ const computer = new SkyComputer(sky, "Preview");
 npm run check
 ```
 
-测试范围和实时验证记录见 [docs/validation.md](docs/validation.md)。
+测试范围和实时验证记录见 [docs/validation.md](docs/validation.md)。目标选择采用两阶段 typed decision，
+并使用选项概率和置信度作为执行前的安全信号。

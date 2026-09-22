@@ -74,7 +74,7 @@ describe("dual decision policy", () => {
       const decision = await policy.decide(SNAPSHOT, "Open the report", []);
 
       expect(decision.provider).toBe("jev");
-      expect(jev.calls).toBe(1);
+      expect(jev.calls).toBe(2);
       expect(laya.calls).toBe(0);
     } finally {
       for (const [name, value] of original) {
@@ -93,7 +93,7 @@ describe("dual decision policy", () => {
 
     expect(decision.provider).toBe("laya");
     expect(decision.model).toBe("laya-test");
-    expect(primary.calls).toBe(1);
+    expect(primary.calls).toBe(2);
     expect(secondary.calls).toBe(0);
   });
 
@@ -106,8 +106,8 @@ describe("dual decision policy", () => {
 
     expect(decision.provider).toBe("jev");
     expect(decision.model).toBe("jev-test");
-    expect(primary.calls).toBe(1);
-    expect(secondary.calls).toBe(1);
+    expect(primary.calls).toBe(2);
+    expect(secondary.calls).toBe(2);
   });
 
   it("fails back when the primary runtime is unavailable", async () => {
@@ -119,7 +119,7 @@ describe("dual decision policy", () => {
 
     expect(decision.provider).toBe("jev");
     expect(primary.calls).toBe(1);
-    expect(secondary.calls).toBe(1);
+    expect(secondary.calls).toBe(2);
   });
 
   it("reports both provider failures without bypassing the caller safety gate", async () => {
@@ -139,7 +139,7 @@ describe("dual decision policy", () => {
     const decision = await policy.decide(SNAPSHOT, "Open the report", []);
 
     expect(decision.provider).toBe("jev");
-    expect(jev.calls).toBe(1);
+    expect(jev.calls).toBe(2);
     expect(laya.calls).toBe(0);
   });
 });

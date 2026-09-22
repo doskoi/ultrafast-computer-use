@@ -20,7 +20,7 @@ BLOCKED means the supported read-only navigation operations cannot safely contin
 Never choose or infer typing, passwords, login, consent, sending, uploading, saving, deleting, purchasing, publishing,
 changing settings, permissions, accounts, subscriptions, or other state-changing work.`;
 
-const TARGET = `Assuming CLICK is the selected next operation, choose the one current indexed element that best advances
+const TARGET = `Assuming the named operation is the selected next operation, choose the one current indexed element that best advances
 the full user goal. Select only a supplied index. Never invent coordinates, selectors, commands, text input, or elements.`;
 
 const COMPLETE = `Does the current visible accessibility state clearly prove that every part of the user's goal is complete?
@@ -201,6 +201,17 @@ class TypedDecisionPolicy {
       DONE: "The current view visibly proves the complete goal is satisfied.",
       BLOCKED: "No supported safe navigation action can advance the goal.",
     };
+    const stateFor = (elements: readonly ComputerElement[]) => ({
+      app: snapshot.app,
+      visible_accessibility_text: snapshot.modelText,
+      candidate_elements: elements.map((element) => ({
+        index: String(element.index),
+        description: element.description,
+        operations: element.operations,
+      })),
+      recent_actions: history.slice(-10),
+    });
+    const state = stateFor(snapshot.elements);
     const questions: Questions = {
       operation: { type: "choice", instructions: { goal, rules: NEXT_ACTION }, criteria: operations },
       goal_complete: {
@@ -212,30 +223,13 @@ class TypedDecisionPolicy {
         },
       },
     };
-    for (const [operation, elements] of targetGroups) {
-      questions[`${operation.toLowerCase()}_target`] = {
-        type: "choice",
-        instructions: { goal, operation, rules: TARGET },
-        criteria: elementCriteria(elements),
-      };
-    }
-
     const started = performance.now();
-    const response = await this.getClient().systemOne({
+    const client = this.getClient();
+    const response = await client.systemOne({
       model: this.options.model,
-      state: {
-        app: snapshot.app,
-        visible_accessibility_text: snapshot.modelText,
-        candidate_elements: snapshot.elements.map((element) => ({
-          index: String(element.index),
-          description: element.description,
-          operations: element.operations,
-        })),
-        recent_actions: history.slice(-10),
-      },
+      state,
       questions,
     });
-    const latencyMs = Math.round(performance.now() - started);
     const answers = response.answers;
     if (typeof answers !== "object" || answers === null) throw new Error("Invalid typed-decision response");
     const operation = validatedChoice(answers.operation, new Set(Object.keys(operations)));
@@ -247,14 +241,31 @@ class TypedDecisionPolicy {
     let targetConfidence: number | null = null;
     const selectedTargets = targetGroups.get(operation.selected as ElementOperation);
     if (selectedTargets !== undefined) {
+      const targetKey = `${operation.selected.toLowerCase()}_target`;
+      const targetResponse = await client.systemOne({
+        model: this.options.model,
+        state: stateFor(selectedTargets),
+        questions: {
+          [targetKey]: {
+            type: "choice",
+            instructions: { goal, operation: operation.selected, rules: TARGET },
+            criteria: elementCriteria(selectedTargets),
+          },
+        },
+      });
+      const targetAnswers = targetResponse.answers;
+      if (typeof targetAnswers !== "object" || targetAnswers === null) {
+        throw new Error("Invalid typed-decision target response");
+      }
       const target = validatedChoice(
-        answers[`${operation.selected.toLowerCase()}_target`],
+        targetAnswers[targetKey],
         new Set(selectedTargets.map((element) => String(element.index))),
       );
       targetIndex = Number.parseInt(target.selected, 10);
       targetProbability = target.probability;
       targetConfidence = target.confidence;
     }
+    const latencyMs = Math.round(performance.now() - started);
     const selectedOperation = operation.selected as Operation;
     return {
       operation: selectedOperation,
