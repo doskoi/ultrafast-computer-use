@@ -1,7 +1,7 @@
 # Ultrafast Computer Use Assistant
 
 这是一个独立、可复用的 Computer Use 导航库。它读取 OpenAI Computer Use 的无障碍树，把当前
-`element_index` 转成有限动作空间，再让本地 Laya Ultrafast 判断下一步操作及目标。
+`element_index` 转成有限动作空间，再让配置的 Jev/Laya provider 判断下一步操作及目标。
 
 设计参考 `browser-use/jev-ultrafast` 的
 [`1231850a`](https://github.com/browser-use/jev-ultrafast/tree/1231850a0bf1a0c0341fe408ef1668dbbfdfac46)：
@@ -12,7 +12,7 @@
 - 执行前再次读取完整页面，页面变化就拒绝使用旧索引。
 
 Ultrafast 不操作界面。Computer Use 负责观察和执行，Ultrafast 只从代码给出的当前候选里做语义判断。
-具体调用在 `DualPolicy.decide()`：默认先用本地 `laya-mlx`，需要时再尝试 Jev；两者都只负责语义判断，
+具体调用在 `DualPolicy.decide()`：默认先用远程 Jev，必要时一次 failback 到本地 Laya；两者都只负责语义判断，
 不会绕过 Computer Use 的执行确认。
 
 ## 安装
@@ -41,22 +41,23 @@ npm run build
 
 ### Dual provider
 
-默认 provider 顺序是 `laya -> jev`。主 provider 不可用、返回 `BLOCKED`，或执行概率低于 `0.55` 时，
+默认 provider 顺序是 `jev -> laya`。主 provider 不可用、返回 `BLOCKED`，或执行概率低于 `0.55` 时，
 只尝试一次另一个 provider；如果 failback 也不可用，调用方继续走本地 Computer Use 判断。可以通过环境变量切换：
 
 ```bash
-export ULTRAFAST_PRIMARY_PROVIDER=laya
-export ULTRAFAST_SECONDARY_PROVIDER=jev
-# 切换成 Jev 主用、Laya failback：
-# export ULTRAFAST_PRIMARY_PROVIDER=jev
-# export ULTRAFAST_SECONDARY_PROVIDER=laya
+export ULTRAFAST_PRIMARY_PROVIDER=jev
+export ULTRAFAST_SECONDARY_PROVIDER=laya
+# 只使用本地 Laya：
+# export ULTRAFAST_PRIMARY_PROVIDER=laya
+# export ULTRAFAST_SECONDARY_PROVIDER=none
 ```
 
 `ULTRAFAST_SECONDARY_PROVIDER=none` 可关闭 failback；也接受兼容名称
 `ULTRAFAST_FAILBACK_PROVIDER`。`ULTRAFAST_FALLBACK_THRESHOLD` 和
 `ULTRAFAST_COMPLETION_THRESHOLD` 分别控制弱操作与弱 DONE 结果何时切换。
 
-Jev 是历史的 TypeSafe 远程 provider，需要 `TYPESAFE_API_KEY`。不要把密钥提交到仓库或普通配置；
+Jev 是 TypeSafe 远程 provider，需要 `TYPESAFE_API_KEY`，默认主用会把当前 AX 文本发送到该服务。
+不要把密钥提交到仓库或普通配置；
 Computer Use skill 可从权限为 `0600` 的 `~/.config/ultrafast/jev.env` 加载它：
 
 ```bash
@@ -66,7 +67,8 @@ printf '%s\n' 'export TYPESAFE_API_KEY=...' > ~/.config/ultrafast/jev.env
 chmod 600 ~/.config/ultrafast/jev.env
 ```
 
-如果不配置 Jev，Laya 仍然可以单独工作；只有实际触发 failback 时 Jev 才会被初始化。
+如果不希望把页面内容发送到远程服务，请显式设置 `ULTRAFAST_PRIMARY_PROVIDER=laya` 和
+`ULTRAFAST_SECONDARY_PROVIDER=none`；这样决策只在本地完成。
 
 ### Agent runtime configuration
 

@@ -64,7 +64,7 @@ export interface SystemOneClientLike {
 }
 
 export interface DualPolicyOptions {
-  /** Provider used for the first attempt. Defaults to ULTRAFAST_PRIMARY_PROVIDER or laya. */
+  /** Provider used for the first attempt. Defaults to ULTRAFAST_PRIMARY_PROVIDER or jev. */
   readonly primary?: DecisionProviderName;
   /** Provider used when primary is unavailable or produces a weak decision. null disables failback. */
   readonly secondary?: SecondaryProviderName;
@@ -358,7 +358,7 @@ export class DualPolicy {
   constructor(options: DualPolicyOptions = {}) {
     this.options = options;
     this.primary = options.primary
-      ?? providerFromEnvironment(process.env.ULTRAFAST_PRIMARY_PROVIDER, "ULTRAFAST_PRIMARY_PROVIDER", "laya");
+      ?? providerFromEnvironment(process.env.ULTRAFAST_PRIMARY_PROVIDER, "ULTRAFAST_PRIMARY_PROVIDER", "jev");
     const defaultSecondary = otherProvider(this.primary);
     this.secondary = options.secondary !== undefined
       ? options.secondary

@@ -2,7 +2,7 @@
 
 This repository owns a reusable Ultrafast decision layer for OpenAI Computer Use. Application-specific behavior belongs in examples or caller configuration, not in the core package.
 
-- The installed Codex integration is machine-wide: every Codex agent and subagent using Computer Use should discover and prefer the local Laya-backed Ultrafast policy automatically. Do not document it as a preference of one conversation or one agent.
+- The installed Codex integration is machine-wide: every Codex agent and subagent using Computer Use should discover and use the configured Jev/Laya Ultrafast policy automatically. The default is Jev with local Laya failback; do not document it as a preference of one conversation or one agent.
 - Keep observation, semantic judgment, authorization, and UI execution as separate boundaries.
 - Ultrafast may select only from the current indexed accessibility elements. It must never generate coordinates, selectors, commands, or arbitrary text input.
 - Capture a fresh full accessibility tree before every UI action and reject stale decisions.

@@ -58,6 +58,32 @@ class FakeClient implements SystemOneClientLike {
 }
 
 describe("dual decision policy", () => {
+  it("defaults to Jev primary and Laya failback", async () => {
+    const variables = [
+      "ULTRAFAST_PRIMARY_PROVIDER",
+      "ULTRAFAST_SECONDARY_PROVIDER",
+      "ULTRAFAST_FAILBACK_PROVIDER",
+    ] as const;
+    const original = variables.map((name) => [name, process.env[name]] as const);
+    for (const name of variables) delete process.env[name];
+    try {
+      const jev = new FakeClient(response(0.8, "jev-test"));
+      const laya = new FakeClient(response(0.9, "laya-test"));
+      const policy = new DualPolicy({ jevClient: jev, layaClient: laya });
+
+      const decision = await policy.decide(SNAPSHOT, "Open the report", []);
+
+      expect(decision.provider).toBe("jev");
+      expect(jev.calls).toBe(1);
+      expect(laya.calls).toBe(0);
+    } finally {
+      for (const [name, value] of original) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
+  });
+
   it("keeps the primary result and does not call failback when confidence is sufficient", async () => {
     const primary = new FakeClient(response(0.8, "laya-test"));
     const secondary = new FakeClient(response(0.9, "jev-test"));

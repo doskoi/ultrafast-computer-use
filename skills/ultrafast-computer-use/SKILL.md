@@ -1,6 +1,6 @@
 ---
 name: ultrafast-computer-use
-description: Automatically prefer local Laya Ultrafast for indexed next-action selection whenever any Codex agent or subagent operates a native app or browser through OpenAI Computer Use. Fall back locally when Laya, its model, or a safe accessibility state is unavailable.
+description: Use the configured Jev/Laya provider for indexed next-action selection whenever any Codex agent or subagent operates a native app or browser through OpenAI Computer Use, defaulting to Jev with local Laya failback.
 ---
 
 # Ultrafast Computer Use
@@ -9,7 +9,7 @@ This is a machine-wide Computer Use policy, not a preference scoped to one conve
 agent and subagent that discovers this skill should invoke it automatically when it operates a UI through
 `cua_repl`; the user does not need to name the skill in each task.
 
-Use Ultrafast as the first semantic action selector when Computer Use exposes a useful accessibility tree. Keep
+Use the configured Ultrafast provider as the first semantic action selector when Computer Use exposes a useful accessibility tree. Keep
 `cua_repl` responsible for observation, freshness checks, execution, and confirmations. Ultrafast only selects from the
 current indexed candidates.
 
@@ -71,7 +71,7 @@ current indexed candidates.
 
    The script invokes the configured primary provider, deletes the request file, and can fail back once to the
    secondary provider. Configure `LAYA_MLX_PATH`, `LAYA_MLX_PYTHON`, and `LAYA_MLX_MODEL` before using the skill.
-   The default order is `laya -> jev`; switch it with `ULTRAFAST_PRIMARY_PROVIDER` and
+   The default order is `jev -> laya`; switch it with `ULTRAFAST_PRIMARY_PROVIDER` and
    `ULTRAFAST_SECONDARY_PROVIDER` (`none` disables failback). Jev is an optional remote provider and requires
    `TYPESAFE_API_KEY`; the script can load it from the machine-local `0600` file
    `~/.config/ultrafast/jev.env` (or `ULTRAFAST_JEV_ENV_FILE`). Treat exit 78 or an `ok:false` response as
