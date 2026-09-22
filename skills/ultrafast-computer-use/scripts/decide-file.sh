@@ -8,6 +8,14 @@ if [[ -z "$request_file" ]]; then
   exit 64
 fi
 
+# The Codex desktop process does not inherit exports made later in a terminal.
+# Load the machine-local runtime contract explicitly, while preserving any
+# variables supplied by a caller or launch environment.
+laya_env_file="${ULTRAFAST_LAYA_ENV_FILE:-${HOME}/.config/ultrafast/laya.env}"
+if [[ -r "$laya_env_file" ]]; then
+  source "$laya_env_file"
+fi
+
 cleanup() {
   rm -- "$request_file" 2>/dev/null || true
 }

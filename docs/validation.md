@@ -2,10 +2,10 @@
 
 ## Local runtime notes
 
-The Node package starts one long-lived local Python worker. Before a live check, set `LAYA_MLX_PATH` to the
-`laya-mlx` checkout and `LAYA_MLX_PYTHON` to the Python environment where that checkout is installed. Set
-`LAYA_MLX_MODEL` to a local checkpoint directory for offline validation; a model ID is also accepted, but the
-first load may download weights. This is local model inference, not a remote decision API.
+The Node package starts one long-lived local Python worker. The installed Computer Use skill loads
+`~/.config/ultrafast/laya.env` before each decision. That file should set `LAYA_MLX_PATH` to the `laya-mlx`
+checkout, `LAYA_MLX_PYTHON` to the Python environment where that checkout is installed, and `LAYA_MLX_MODEL`
+to a local checkpoint directory or model ID. This is local model inference, not a remote decision API.
 
 The direct code example in the README uses a machine-specific `file://` path. On another machine, replace it with
 that checkout's `dist/index.js` or install/link the package and import it by package name.
@@ -26,7 +26,7 @@ fresh-tree checks, temporary-file validation and deletion, and both the `@oai/sk
 
 `test/laya.test.ts` sends a synthetic Computer Use request through the local JSONL worker. It verifies the
 worker protocol and response shape without loading model weights or touching the GUI. A local model check should
-set `LAYA_MLX_PATH`, `LAYA_MLX_PYTHON`, and `LAYA_MLX_MODEL`, then invoke the same CLI used by the skill.
+load `~/.config/ultrafast/laya.env`, then invoke the same CLI used by the skill.
 
 A real Computer Use end-to-end check requires an enabled app or browser surface. The check should open a harmless
 read-only screen, call `getAXState({ disableDiffing: true })`, let local Laya select an indexed navigation target,

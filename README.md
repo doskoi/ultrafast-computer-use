@@ -23,11 +23,10 @@ Ultrafast 不操作界面。Computer Use 负责观察和执行，Ultrafast 只�
 cd /Users/sj/projects/laya-mlx
 uv sync
 
+# 机器级配置写入 ~/.config/ultrafast/laya.env；Computer Use skill 会自动加载它。
 export LAYA_MLX_PATH=/Users/sj/projects/laya-mlx
 export LAYA_MLX_PYTHON=/Users/sj/projects/laya-mlx/.venv/bin/python
-# 可填本地 checkpoint 目录；也可填 Hugging Face model ID。
-# 严格离线运行时必须填写已经下载好的本地目录。
-export LAYA_MLX_MODEL=/absolute/path/to/laya-checkpoint
+export LAYA_MLX_MODEL=aac6fef/laya-multilingual-mlx
 
 cd /Users/sj/projects/ultrafast-computer-use
 npm install
@@ -38,6 +37,14 @@ npm run build
 `laya-mlx` 的 Python 环境。`LAYA_MLX_MODEL` 可以是本地 checkpoint 目录或 model ID；如果省略，默认
 使用 `aac6fef/laya-multilingual-mlx`，首次加载可能从 Hugging Face 下载权重。决策请求始终发给本地
 `laya-mlx` worker，不调用任何远程决策 API；要做到完全离线，先下载权重并使用本地目录。
+
+### Agent runtime configuration
+
+不要只在某个终端临时执行 `export`：已经启动的 Codex/ChatGPT 进程不会继承之后的 shell 环境。
+在本机创建 `~/.config/ultrafast/laya.env`，写入上述三个变量。安装的 skill 入口会在每次决策前
+显式加载这份文件；交互式登录 shell 也会加载它，因此 `ultrafast-computer-use` 和
+`ultrafast-android-assistant` 共用同一份 Laya 配置。可通过 `ULTRAFAST_LAYA_ENV_FILE` 指定其他
+配置文件。该文件只应保存本机路径和模型配置，不要放凭据。
 
 ## 在 Computer Use 中使用
 
