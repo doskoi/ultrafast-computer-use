@@ -12,7 +12,8 @@
 - 执行前再次读取完整页面，页面变化就拒绝使用旧索引。
 
 Ultrafast 不操作界面。Computer Use 负责观察和执行，Ultrafast 只从代码给出的当前候选里做语义判断。
-具体调用在 `UltrafastPolicy.decide()`：通过本地 `laya-mlx` 的 Python worker 执行 typed decision。
+具体调用在 `DualPolicy.decide()`：默认先用本地 `laya-mlx`，需要时再尝试 Jev；两者都只负责语义判断，
+不会绕过 Computer Use 的执行确认。
 
 ## 安装
 
@@ -35,8 +36,37 @@ npm run build
 
 `LAYA_MLX_PATH` 让 Python worker 能找到本地 checkout，`LAYA_MLX_PYTHON` 指定安装了
 `laya-mlx` 的 Python 环境。`LAYA_MLX_MODEL` 可以是本地 checkpoint 目录或 model ID；如果省略，默认
-使用 `aac6fef/laya-multilingual-mlx`，首次加载可能从 Hugging Face 下载权重。决策请求始终发给本地
-`laya-mlx` worker，不调用任何远程决策 API；要做到完全离线，先下载权重并使用本地目录。
+使用 `aac6fef/laya-multilingual-mlx`，首次加载可能从 Hugging Face 下载权重。选择 Laya 时请求始终发给本地
+`laya-mlx` worker；要做到完全离线，保持 `ULTRAFAST_SECONDARY_PROVIDER=none`，先下载权重并使用本地目录。
+
+### Dual provider
+
+默认 provider 顺序是 `laya -> jev`。主 provider 不可用、返回 `BLOCKED`，或执行概率低于 `0.55` 时，
+只尝试一次另一个 provider；如果 failback 也不可用，调用方继续走本地 Computer Use 判断。可以通过环境变量切换：
+
+```bash
+export ULTRAFAST_PRIMARY_PROVIDER=laya
+export ULTRAFAST_SECONDARY_PROVIDER=jev
+# 切换成 Jev 主用、Laya failback：
+# export ULTRAFAST_PRIMARY_PROVIDER=jev
+# export ULTRAFAST_SECONDARY_PROVIDER=laya
+```
+
+`ULTRAFAST_SECONDARY_PROVIDER=none` 可关闭 failback；也接受兼容名称
+`ULTRAFAST_FAILBACK_PROVIDER`。`ULTRAFAST_FALLBACK_THRESHOLD` 和
+`ULTRAFAST_COMPLETION_THRESHOLD` 分别控制弱操作与弱 DONE 结果何时切换。
+
+Jev 是历史的 TypeSafe 远程 provider，需要 `TYPESAFE_API_KEY`。不要把密钥提交到仓库或普通配置；
+Computer Use skill 可从权限为 `0600` 的 `~/.config/ultrafast/jev.env` 加载它：
+
+```bash
+mkdir -p ~/.config/ultrafast
+chmod 700 ~/.config/ultrafast
+printf '%s\n' 'export TYPESAFE_API_KEY=...' > ~/.config/ultrafast/jev.env
+chmod 600 ~/.config/ultrafast/jev.env
+```
+
+如果不配置 Jev，Laya 仍然可以单独工作；只有实际触发 failback 时 Jev 才会被初始化。
 
 ### Agent runtime configuration
 
@@ -61,9 +91,10 @@ subagent，只要通过 Computer Use 操作原生应用或浏览器，就应自�
 在每个任务里再次指定。`~/.codex/AGENTS.md` 保存这条全局指令，skill 的
 `allow_implicit_invocation: true` 允许自动选择。
 
-skill 会把当前完整 AX 状态写入权限为 `0600` 的随机临时文件，再调用本地 `laya-mlx` worker。
-worker 常驻在一次 Node 进程内，模型只加载一次；请求结束后临时文件立即删除，AX 数据不会发送到
-其它远程 API。
+skill 会把当前完整 AX 状态写入权限为 `0600` 的随机临时文件，再调用配置的决策 provider。
+选择 Laya 时 worker 常驻在一次 Node 进程内，模型只加载一次；请求结束后临时文件立即删除。
+只有明确启用 Jev failback 时，AX 内容才会发送到 TypeSafe 远程服务；含敏感内容的页面应保持
+`ULTRAFAST_SECONDARY_PROVIDER=none`。
 
 没有本地模型、本地 Laya 请求失败、结果概率不足或页面已经变化时，skill 会回退到 Computer Use 自己的
 本地判断。Ultrafast 不会取代 Computer Use 的执行确认。
@@ -77,13 +108,13 @@ worker 常驻在一次 Node 进程内，模型只加载一次；请求结束后�
 `CuaComputer`，不要把业务项目耦合到这个仓库：
 
 ```js
-const { CuaComputer, ComputerUseAssistant, UltrafastPolicy } =
+const { CuaComputer, ComputerUseAssistant, DualPolicy } =
   await import("file:///Users/sj/projects/ultrafast-computer-use/dist/index.js");
 
 const app = await cua.getApp("Preview");
 const assistant = new ComputerUseAssistant(
   new CuaComputer(app, "Preview"),
-  new UltrafastPolicy(),
+  new DualPolicy(),
 );
 
 // 默认只建议，不执行。

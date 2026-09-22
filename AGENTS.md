@@ -14,6 +14,9 @@ This repository owns a reusable Ultrafast decision layer for OpenAI Computer Use
   loads that file explicitly because a desktop-launched agent cannot see exports made later in a terminal. The
   model may be a local checkpoint directory or a Hugging Face model ID; an unset model can download
   `aac6fef/laya-multilingual-mlx` on first load, so strict offline checks must use a local path.
+- Decision routing is dual-capable: `ULTRAFAST_PRIMARY_PROVIDER` selects `laya` or `jev`, and
+  `ULTRAFAST_SECONDARY_PROVIDER` selects the one-time failback or `none`. Jev is remote and must be explicitly
+  provisioned with `TYPESAFE_API_KEY` in a machine-local `0600` env file; never commit that credential.
 - The README's `file://` import is machine-specific. A different checkout must use its actual `dist/index.js`,
   or install/link the package and import `ultrafast-computer-use`.
 - Live CUA trees can use numbered interactive lines such as `8 link Learn more`; keep the parser and fresh-tree

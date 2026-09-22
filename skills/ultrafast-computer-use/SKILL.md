@@ -69,12 +69,17 @@ current indexed candidates.
    /Users/sj/.codex/skills/ultrafast-computer-use/scripts/decide-file.sh /tmp/ultrafast-computer-use-REQUEST.json
    ```
 
-   The script invokes the local `laya-mlx` worker and deletes the request file. Configure `LAYA_MLX_PATH`,
-   `LAYA_MLX_PYTHON`, and `LAYA_MLX_MODEL` before using the skill. Treat exit 78 or an `ok:false` response as
+   The script invokes the configured primary provider, deletes the request file, and can fail back once to the
+   secondary provider. Configure `LAYA_MLX_PATH`, `LAYA_MLX_PYTHON`, and `LAYA_MLX_MODEL` before using the skill.
+   The default order is `laya -> jev`; switch it with `ULTRAFAST_PRIMARY_PROVIDER` and
+   `ULTRAFAST_SECONDARY_PROVIDER` (`none` disables failback). Jev is an optional remote provider and requires
+   `TYPESAFE_API_KEY`; the script can load it from the machine-local `0600` file
+   `~/.config/ultrafast/jev.env` (or `ULTRAFAST_JEV_ENV_FILE`). Treat exit 78 or an `ok:false` response as
    Ultrafast unavailable and continue locally.
 5. Use an Ultrafast action only when `executionProbability >= 0.55`. Accept `DONE` only when
-   `operationProbability >= 0.55` and `completionProbability >= 0.85`. Low-probability, malformed, unsupported,
-   or failed decisions fall back to local reasoning.
+   `operationProbability >= 0.55` and `completionProbability >= 0.85`. The dual policy may try its secondary
+   provider before returning a weak result; low-probability, malformed, unsupported, or failed decisions still
+   fall back to local reasoning.
 6. Immediately before execution, capture another full AX tree and compare its SHA-256 hash with the saved hash.
    If it changed, discard the decision and start again. If it matches, execute the selected `element_index` through
    the existing target binding, then observe the resulting state and verify progress.

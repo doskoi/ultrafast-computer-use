@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { decideRequestFile, RESPONSE_VERSION } from "./bridge.js";
+import { DecisionProvidersUnavailableError } from "./policy.js";
 
 function write(value: unknown): void {
   process.stdout.write(`${JSON.stringify(value)}\n`);
@@ -20,19 +21,22 @@ async function main(): Promise<void> {
   try {
     write(await decideRequestFile(requestFile));
   } catch (error) {
-    const layaUnavailable = error instanceof Error
-      && error.message.startsWith("Local Laya");
+    const providerUnavailable = error instanceof DecisionProvidersUnavailableError
+      || (error instanceof Error && (
+        error.message.startsWith("Local Laya")
+        || error.message.startsWith("TypeSafe Jev")
+      ));
     write({
       version: RESPONSE_VERSION,
       ok: false,
       error: {
-        code: layaUnavailable ? "laya_unavailable" : "decision_failed",
-        message: layaUnavailable
-          ? "Local laya-mlx is unavailable"
+        code: providerUnavailable ? "provider_unavailable" : "decision_failed",
+        message: providerUnavailable
+          ? "Configured decision providers are unavailable"
           : error instanceof Error ? error.message.slice(0, 500) : "Unknown decision failure",
       },
     });
-    process.exitCode = layaUnavailable ? 78 : 1;
+    process.exitCode = providerUnavailable ? 78 : 1;
   }
 }
 

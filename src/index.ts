@@ -16,11 +16,17 @@ export {
   snapshotFromAccessibility,
 } from "./ax.js";
 export {
+  DecisionProvidersUnavailableError,
+  DualPolicy,
+  JevClient,
   UltrafastPolicy,
   JevPolicy,
+  type DecisionProviderName,
+  type DualPolicyOptions,
+  type SecondaryProviderName,
   type Questions,
-  type SystemOneClientLike,
   type SystemOneRequest,
+  type SystemOneClientLike,
   type SystemOneResponse,
 } from "./policy.js";
 export { LayaClient, type LayaClientOptions } from "./laya.js";

@@ -16,6 +16,13 @@ if [[ -r "$laya_env_file" ]]; then
   source "$laya_env_file"
 fi
 
+# Keep the optional remote Jev credential in a separate 0600 file. The file is
+# sourced only for this decision process and is never part of the repository.
+jev_env_file="${ULTRAFAST_JEV_ENV_FILE:-${HOME}/.config/ultrafast/jev.env}"
+if [[ -r "$jev_env_file" ]]; then
+  source "$jev_env_file"
+fi
+
 cleanup() {
   rm -- "$request_file" 2>/dev/null || true
 }

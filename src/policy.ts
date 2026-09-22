@@ -1,5 +1,7 @@
 import { performance } from "node:perf_hooks";
 
+import { TypeSafeClient } from "@typesafe-ai/sdk";
+
 import type {
   ComputerElement,
   ComputerSnapshot,
@@ -23,6 +25,9 @@ the full user goal. Select only a supplied index. Never invent coordinates, sele
 
 const COMPLETE = `Does the current visible accessibility state clearly prove that every part of the user's goal is complete?
 An entry point, link, button, loading state, or earlier action is not completion evidence.`;
+
+export type DecisionProviderName = "laya" | "jev";
+export type SecondaryProviderName = DecisionProviderName | null;
 
 export interface ChoiceAnswer {
   readonly type?: string;
@@ -55,6 +60,22 @@ export type Questions = Record<string, {
 
 export interface SystemOneClientLike {
   systemOne(request: SystemOneRequest): Promise<SystemOneResponse>;
+  close?(): void;
+}
+
+export interface DualPolicyOptions {
+  /** Provider used for the first attempt. Defaults to ULTRAFAST_PRIMARY_PROVIDER or laya. */
+  readonly primary?: DecisionProviderName;
+  /** Provider used when primary is unavailable or produces a weak decision. null disables failback. */
+  readonly secondary?: SecondaryProviderName;
+  /** Minimum execution probability before a valid primary decision is accepted. */
+  readonly fallbackThreshold?: number;
+  /** Minimum completion probability for a DONE decision before failback. */
+  readonly completionThreshold?: number;
+  readonly layaClient?: SystemOneClientLike;
+  readonly jevClient?: SystemOneClientLike;
+  readonly layaModel?: string;
+  readonly jevModel?: string;
 }
 
 function finiteProbability(value: unknown): value is number {
@@ -101,23 +122,60 @@ function elementCriteria(elements: readonly ComputerElement[]): Record<string, u
   }]));
 }
 
-export class UltrafastPolicy {
+/** Adapter for the historical remote Jev / TypeSafe decision service. */
+export class JevClient implements SystemOneClientLike {
+  private client: TypeSafeClient | null = null;
+
+  constructor(private readonly model = process.env.TYPESAFE_DEFAULT_MODEL ?? "jev-latest") {}
+
+  async systemOne(request: SystemOneRequest): Promise<SystemOneResponse> {
+    const response = await this.getClient().systemOne(request as never);
+    return {
+      model: response.model,
+      answers: response.answers as unknown as Record<string, unknown>,
+    };
+  }
+
+  close(): void {
+    this.client = null;
+  }
+
+  private getClient(): TypeSafeClient {
+    if (this.client !== null) return this.client;
+    if (!process.env.TYPESAFE_API_KEY) {
+      throw new Error("TypeSafe Jev unavailable: set TYPESAFE_API_KEY before using the Jev provider");
+    }
+    this.client = new TypeSafeClient({ defaultModel: this.model });
+    return this.client;
+  }
+}
+
+interface TypedPolicyOptions {
+  readonly provider: DecisionProviderName;
+  readonly model: string;
+  readonly createClient: () => SystemOneClientLike;
+}
+
+class TypedDecisionPolicy {
   private client: SystemOneClientLike | null;
 
-  constructor(client?: SystemOneClientLike, private readonly model = process.env.LAYA_MLX_MODEL ?? "aac6fef/laya-multilingual-mlx") {
+  constructor(
+    private readonly options: TypedPolicyOptions,
+    client?: SystemOneClientLike,
+  ) {
     this.client = client ?? null;
   }
 
   private getClient(): SystemOneClientLike {
     if (this.client !== null) return this.client;
-    this.client = new LayaClient({ model: this.model });
+    this.client = this.options.createClient();
     return this.client;
   }
 
   close(): void {
     const client = this.client;
     this.client = null;
-    if (client !== null && "close" in client && typeof client.close === "function") client.close();
+    client?.close?.();
   }
 
   async decide(snapshot: ComputerSnapshot, goal: string, history: readonly HistoryEntry[]): Promise<Decision> {
@@ -164,7 +222,7 @@ export class UltrafastPolicy {
 
     const started = performance.now();
     const response = await this.getClient().systemOne({
-      model: this.model,
+      model: this.options.model,
       state: {
         app: snapshot.app,
         visible_accessibility_text: snapshot.modelText,
@@ -208,10 +266,159 @@ export class UltrafastPolicy {
       completionProbability: complete.noul,
       executionProbability: Math.min(operation.probability, targetProbability ?? operation.probability),
       latencyMs,
-      model: typeof response.model === "string" ? response.model : this.model,
+      model: typeof response.model === "string" ? response.model : this.options.model,
+      provider: this.options.provider,
     };
   }
 }
 
-/** @deprecated Use UltrafastPolicy. Kept as a compatibility export for existing callers. */
-export { UltrafastPolicy as JevPolicy };
+export class UltrafastPolicy extends TypedDecisionPolicy {
+  constructor(
+    client?: SystemOneClientLike,
+    model = process.env.LAYA_MLX_MODEL ?? "aac6fef/laya-multilingual-mlx",
+  ) {
+    super({
+      provider: "laya",
+      model,
+      createClient: () => new LayaClient({ model }),
+    }, client);
+  }
+}
+
+export class JevPolicy extends TypedDecisionPolicy {
+  constructor(
+    client?: SystemOneClientLike,
+    model = process.env.TYPESAFE_DEFAULT_MODEL ?? "jev-latest",
+  ) {
+    super({
+      provider: "jev",
+      model,
+      createClient: () => new JevClient(model),
+    }, client);
+  }
+}
+
+function providerFromEnvironment(
+  value: string | undefined,
+  variable: string,
+  fallback: DecisionProviderName,
+): DecisionProviderName {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === undefined || normalized === "") return fallback;
+  if (normalized === "laya" || normalized === "jev") return normalized;
+  throw new TypeError(`${variable} must be laya or jev`);
+}
+
+function secondaryFromEnvironment(
+  value: string | undefined,
+  fallback: DecisionProviderName,
+): SecondaryProviderName {
+  const normalized = value?.trim().toLowerCase();
+  if (normalized === undefined || normalized === "") return fallback;
+  if (normalized === "none" || normalized === "off" || normalized === "disabled") return null;
+  if (normalized === "laya" || normalized === "jev") return normalized;
+  throw new TypeError("ULTRAFAST_SECONDARY_PROVIDER must be laya, jev, or none");
+}
+
+function probabilityFromEnvironment(variable: string, fallback: number): number {
+  const raw = process.env[variable];
+  if (raw === undefined || raw.trim() === "") return fallback;
+  const value = Number(raw);
+  if (!finiteProbability(value)) throw new TypeError(`${variable} must be a probability between 0 and 1`);
+  return value;
+}
+
+function otherProvider(provider: DecisionProviderName): DecisionProviderName {
+  return provider === "laya" ? "jev" : "laya";
+}
+
+function providerFailureMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+export class DecisionProvidersUnavailableError extends Error {
+  constructor(primary: DecisionProviderName, secondary: DecisionProviderName, primaryError: unknown, secondaryError: unknown) {
+    super(
+      `Decision providers unavailable (${primary}: ${providerFailureMessage(primaryError)}; `
+      + `${secondary}: ${providerFailureMessage(secondaryError)}`,
+    );
+    this.name = "DecisionProvidersUnavailableError";
+  }
+}
+
+/** Routes one decision to a configurable primary provider, then failbacks once to the other provider. */
+export class DualPolicy {
+  private readonly primary: DecisionProviderName;
+  private readonly secondary: SecondaryProviderName;
+  private readonly fallbackThreshold: number;
+  private readonly completionThreshold: number;
+  private readonly options: DualPolicyOptions;
+  private readonly policies = new Map<DecisionProviderName, TypedDecisionPolicy>();
+
+  constructor(options: DualPolicyOptions = {}) {
+    this.options = options;
+    this.primary = options.primary
+      ?? providerFromEnvironment(process.env.ULTRAFAST_PRIMARY_PROVIDER, "ULTRAFAST_PRIMARY_PROVIDER", "laya");
+    const defaultSecondary = otherProvider(this.primary);
+    this.secondary = options.secondary !== undefined
+      ? options.secondary
+      : secondaryFromEnvironment(
+        process.env.ULTRAFAST_SECONDARY_PROVIDER ?? process.env.ULTRAFAST_FAILBACK_PROVIDER,
+        defaultSecondary,
+      );
+    if (this.secondary === this.primary) {
+      throw new TypeError("ULTRAFAST_SECONDARY_PROVIDER must differ from the primary provider");
+    }
+    this.fallbackThreshold = options.fallbackThreshold
+      ?? probabilityFromEnvironment("ULTRAFAST_FALLBACK_THRESHOLD", 0.55);
+    this.completionThreshold = options.completionThreshold
+      ?? probabilityFromEnvironment("ULTRAFAST_COMPLETION_THRESHOLD", 0.85);
+    if (!finiteProbability(this.fallbackThreshold) || !finiteProbability(this.completionThreshold)) {
+      throw new RangeError("Dual policy thresholds must be probabilities between 0 and 1");
+    }
+  }
+
+  close(): void {
+    for (const policy of this.policies.values()) policy.close();
+    this.policies.clear();
+  }
+
+  async decide(snapshot: ComputerSnapshot, goal: string, history: readonly HistoryEntry[]): Promise<Decision> {
+    const primaryPolicy = this.policyFor(this.primary);
+    let primaryDecision: Decision;
+    try {
+      primaryDecision = await primaryPolicy.decide(snapshot, goal, history);
+    } catch (primaryError) {
+      if (this.secondary === null) throw primaryError;
+      try {
+        return await this.policyFor(this.secondary).decide(snapshot, goal, history);
+      } catch (secondaryError) {
+        throw new DecisionProvidersUnavailableError(this.primary, this.secondary, primaryError, secondaryError);
+      }
+    }
+
+    if (this.secondary === null || !this.shouldFailback(primaryDecision)) return primaryDecision;
+    try {
+      return await this.policyFor(this.secondary).decide(snapshot, goal, history);
+    } catch {
+      // A weak but valid primary result still leaves the Assistant's safety gate in charge.
+      return primaryDecision;
+    }
+  }
+
+  private shouldFailback(decision: Decision): boolean {
+    if (decision.operation === "BLOCKED") return true;
+    if (decision.executionProbability < this.fallbackThreshold) return true;
+    return decision.operation === "DONE" && decision.completionProbability < this.completionThreshold;
+  }
+
+  private policyFor(provider: DecisionProviderName): TypedDecisionPolicy {
+    const existing = this.policies.get(provider);
+    if (existing !== undefined) return existing;
+    const policy = provider === "laya"
+      ? new UltrafastPolicy(this.options.layaClient, this.options.layaModel)
+      : new JevPolicy(this.options.jevClient, this.options.jevModel);
+    this.policies.set(provider, policy);
+    return policy;
+  }
+}
