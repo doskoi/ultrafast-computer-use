@@ -94,12 +94,13 @@ subagent，只要通过 Computer Use 操作原生应用或浏览器，就应自�
 `allow_implicit_invocation: true` 允许自动选择。
 
 skill 会把当前完整 AX 状态写入权限为 `0600` 的随机临时文件，再调用配置的决策 provider。
-选择 Laya 时 worker 常驻在一次 Node 进程内，模型只加载一次；请求结束后临时文件立即删除。
-只有明确启用 Jev failback 时，AX 内容才会发送到 TypeSafe 远程服务；含敏感内容的页面应保持
-`ULTRAFAST_SECONDARY_PROVIDER=none`。
+默认选择 Jev 时，AX 文本会发送到 TypeSafe 远程服务。选择 Laya 时，worker 在同一次 Node 进程内复用模型；
+当前 `decide-file` 入口每次启动新的 Node 进程，这种复用不跨调用。请求结束后临时文件立即删除。
+含敏感内容的页面应显式设置 `ULTRAFAST_PRIMARY_PROVIDER=laya` 和 `ULTRAFAST_SECONDARY_PROVIDER=none`，
+让决策只在本地完成。
 
-没有本地模型、本地 Laya 请求失败、结果概率不足或页面已经变化时，skill 会回退到 Computer Use 自己的
-本地判断。Ultrafast 不会取代 Computer Use 的执行确认。
+主 provider 不可用或结果概率不足时，最多尝试一次配置的备用 provider；两者都无法给出有效结果，
+或页面已经变化时，skill 会回退到 Computer Use 自己的本地判断。Ultrafast 不会取代 Computer Use 的执行确认。
 
 这个自动范围依赖 Codex 的全局指令和 skill 发现机制。其他不读取 `~/.codex/AGENTS.md` 与
 `~/.codex/skills` 的 Agent 运行时不会因此自动接入；它们需要在自己的 Computer Use 工具层调用本库。

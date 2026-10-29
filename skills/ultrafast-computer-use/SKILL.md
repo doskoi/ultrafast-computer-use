@@ -9,6 +9,9 @@ This is a machine-wide Computer Use policy, not a preference scoped to one conve
 agent and subagent that discovers this skill should invoke it automatically when it operates a UI through
 `cua_repl`; the user does not need to name the skill in each task.
 
+Use **JEV (`jev`) by default**, with local Laya as the one-time failback. A task-specific local-only override does
+not change this default for other tasks. Preserve explicit caller overrides and the sensitive-data boundary below.
+
 Use the configured Ultrafast provider as the first semantic action selector when Computer Use exposes a useful accessibility tree. Keep
 `cua_repl` responsible for observation, freshness checks, execution, and confirmations. Ultrafast only selects from the
 current indexed candidates.
