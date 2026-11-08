@@ -73,7 +73,7 @@ describe("CuaDriverComputer", () => {
 
     expect(runner.calls).toEqual([
       { tool: "get_window_state", args: { pid: 123, window_id: 456, include_screenshot: false } },
-      { tool: "click", args: { pid: 123, window_id: 456, element_index: 3, snapshot_id: "s00000001" } },
+      { tool: "click", args: { pid: 123, window_id: 456, element_index: 3, snapshot_id: "s00000001", delivery_mode: "background" } },
     ]);
   });
 
@@ -93,6 +93,7 @@ describe("CuaDriverComputer", () => {
         window_id: 456,
         element_index: 5,
         snapshot_id: "s00000001",
+        delivery_mode: "background",
         direction: "down",
         amount: 3,
       },

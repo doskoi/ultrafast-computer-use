@@ -196,7 +196,7 @@ export class CuaDriverComputer implements ComputerDriver {
       snapshot_id: this.snapshotId,
     };
     if (decision.operation === "CLICK") {
-      await this.run("click", base);
+      await this.run("click", { ...base, delivery_mode: "background" });
       return;
     }
     const directions: Partial<Record<Operation, "up" | "down" | "left" | "right">> = {
@@ -207,6 +207,6 @@ export class CuaDriverComputer implements ComputerDriver {
     };
     const direction = directions[decision.operation];
     if (direction === undefined) throw new Error(`Operation ${decision.operation} is not executable`);
-    await this.run("scroll", { ...base, direction, amount: 3 });
+    await this.run("scroll", { ...base, delivery_mode: "background", direction, amount: 3 });
   }
 }
