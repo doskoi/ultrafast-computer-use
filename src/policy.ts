@@ -384,7 +384,7 @@ function providerFromEnvironment(
 
 function secondaryFromEnvironment(
   value: string | undefined,
-  fallback: DecisionProviderName,
+  fallback: SecondaryProviderName,
 ): SecondaryProviderName {
   const normalized = value?.trim().toLowerCase();
   if (normalized === undefined || normalized === "") return fallback;
@@ -432,7 +432,7 @@ export class DualPolicy {
     this.options = options;
     this.primary = options.primary
       ?? providerFromEnvironment(process.env.ULTRAFAST_PRIMARY_PROVIDER, "ULTRAFAST_PRIMARY_PROVIDER", "jev");
-    const defaultSecondary = otherProvider(this.primary);
+    const defaultSecondary: SecondaryProviderName = this.primary === "jev" ? null : otherProvider(this.primary);
     this.secondary = options.secondary !== undefined
       ? options.secondary
       : secondaryFromEnvironment(

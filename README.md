@@ -12,7 +12,7 @@
 - 执行前再次读取完整页面，页面变化就拒绝使用旧索引。
 
 Ultrafast 不操作界面。Computer Use 负责观察和执行，Ultrafast 只从代码给出的当前候选里做语义判断。
-具体调用在 `DualPolicy.decide()`：默认先用远程 Jev，必要时一次 failback 到本地 Laya；两者都只负责语义判断，
+具体调用在 `DualPolicy.decide()`：默认只用远程 Jev；只有显式配置 Laya 时才启用 failback。两者都只负责语义判断，
 不会绕过 Computer Use 的执行确认。
 
 ## 安装
@@ -41,12 +41,14 @@ npm run build
 
 ### Dual provider
 
-默认 provider 顺序是 `jev -> laya`。主 provider 不可用、返回 `BLOCKED`，或执行概率低于 `0.55` 时，
-只尝试一次另一个 provider；如果 failback 也不可用，调用方继续走本地 Computer Use 判断。可以通过环境变量切换：
+默认只启用 `jev`，不配置 failback。需要本地回退时显式设置 `ULTRAFAST_SECONDARY_PROVIDER=laya`；
+主 provider 不可用、返回 `BLOCKED`，或执行概率低于 `0.55` 时，只尝试一次配置的另一个 provider；
+如果 failback 也不可用，调用方继续走本地 Computer Use 判断。可以通过环境变量切换：
 
 ```bash
 export ULTRAFAST_PRIMARY_PROVIDER=jev
-export ULTRAFAST_SECONDARY_PROVIDER=laya
+# 默认不启用 Laya 回退；需要时改为 laya：
+export ULTRAFAST_SECONDARY_PROVIDER=none
 # 只使用本地 Laya：
 # export ULTRAFAST_PRIMARY_PROVIDER=laya
 # export ULTRAFAST_SECONDARY_PROVIDER=none
@@ -175,7 +177,7 @@ ultrafast-computer-use run --driver agent-desktop \
 ```
 
 `run` 不加 `--execute` 时只返回建议；`--max-steps` 控制自动执行的上限，达到上限会返回
-`blocked`。两个驱动都走同一套 `DualPolicy`（默认 Jev，失败回退 Laya）。
+`blocked`。两个驱动都走同一套 `DualPolicy`（默认只用 Jev；显式配置 Laya 才回退）。
 
 ## 执行边界
 
