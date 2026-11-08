@@ -9,6 +9,24 @@ export {
 } from "./bridge.js";
 export { CuaComputer, type CuaSurfaceLike } from "./cua.js";
 export {
+  CuaDriverComputer,
+  runCuaDriverTool,
+  snapshotFromCuaDriverState,
+  type CuaDriverElement,
+  type CuaDriverOptions,
+  type CuaDriverRunner,
+  type CuaDriverState,
+} from "./cua-driver.js";
+export {
+  AgentDesktopComputer,
+  runAgentDesktop,
+  snapshotFromAgentDesktop,
+  type AgentDesktopEnvelope,
+  type AgentDesktopNode,
+  type AgentDesktopOptions,
+  type AgentDesktopRunner,
+} from "./agent-desktop.js";
+export {
   parseIndexedElements,
   ReadOnlySafetyPolicy,
   redact,

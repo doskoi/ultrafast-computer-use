@@ -141,6 +141,42 @@ const { sky } = await import("@oai/sky");
 const computer = new SkyComputer(sky, "Preview");
 ```
 
+### CUA Driver 与 agent-desktop
+
+`CuaDriverComputer` 直接调用本机的 `cua-driver` CLI（默认
+`/Applications/CuaDriver.app/Contents/MacOS/cua-driver`，可用 `CUA_DRIVER_BIN` 覆盖）。
+它按 `pid` + `windowId` 读取窗口，保留 cua-driver 的 `element_index`：
+
+```js
+const { CuaDriverComputer } = await import("file:///Users/sj/projects/ultrafast-computer-use/dist/index.js");
+const computer = new CuaDriverComputer({ pid: 2221, windowId: 14328, app: "Calculator" });
+```
+
+`AgentDesktopComputer` 调用 `agent-desktop` CLI（默认从 `PATH` 查找，可用
+`AGENT_DESKTOP_BIN` 覆盖），按应用名读取；存在多个窗口时传 `windowId`：
+
+```js
+const { AgentDesktopComputer } = await import("file:///Users/sj/projects/ultrafast-computer-use/dist/index.js");
+const computer = new AgentDesktopComputer({ app: "Calculator" });
+```
+
+两个适配器都会排除菜单栏和安全策略拦截的元素，执行前重新快照并比对 fingerprint。CLI 提供同样的
+入口，便于在 shell 里直接跑一步：
+
+```bash
+source ~/.config/ultrafast/jev.env
+
+ultrafast-computer-use run --driver cua-driver \
+  --pid 2221 --window-id 14328 --app Calculator \
+  --goal "Click the 7 button" --execute --max-steps 1
+
+ultrafast-computer-use run --driver agent-desktop \
+  --app Calculator --goal "Click the 7 button" --execute --max-steps 1
+```
+
+`run` 不加 `--execute` 时只返回建议；`--max-steps` 控制自动执行的上限，达到上限会返回
+`blocked`。两个驱动都走同一套 `DualPolicy`（默认 Jev，失败回退 Laya）。
+
 ## 执行边界
 
 第一版只支持 `CLICK`、四向 `SCROLL`、`WAIT`、`DONE` 和 `BLOCKED`。它不提供文本输入、粘贴、
