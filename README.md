@@ -41,14 +41,15 @@ npm run build
 
 ### Dual provider
 
-默认只启用 `jev`，不配置 failback。需要本地回退时显式设置 `ULTRAFAST_SECONDARY_PROVIDER=laya`；
-主 provider 不可用、返回 `BLOCKED`，或执行概率低于 `0.55` 时，只尝试一次配置的另一个 provider；
-如果 failback 也不可用，调用方继续走本地 Computer Use 判断。可以通过环境变量切换：
+默认只启用 `jev`，不配置 secondary。`ULTRAFAST_SECONDARY_PROVIDER` 未设置时没有 failback，
+也不会自动选择另一个 provider；需要本地回退时显式设置为 `laya`。主 provider 不可用、返回
+`BLOCKED`，或执行概率低于 `0.55` 时，只尝试一次显式配置的另一个 provider；如果 failback 也不可用，
+调用方继续走本地 Computer Use 判断。可以通过环境变量切换：
 
 ```bash
 export ULTRAFAST_PRIMARY_PROVIDER=jev
-# 默认不启用 Laya 回退；需要时改为 laya：
-export ULTRAFAST_SECONDARY_PROVIDER=none
+# 不设置 SECONDARY：没有 failback
+# export ULTRAFAST_SECONDARY_PROVIDER=laya
 # 只使用本地 Laya：
 # export ULTRAFAST_PRIMARY_PROVIDER=laya
 # export ULTRAFAST_SECONDARY_PROVIDER=none

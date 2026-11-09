@@ -84,6 +84,31 @@ describe("dual decision policy", () => {
     }
   });
 
+  it("does not auto-select a failback when only a primary provider is configured", async () => {
+    const variables = [
+      "ULTRAFAST_PRIMARY_PROVIDER",
+      "ULTRAFAST_SECONDARY_PROVIDER",
+      "ULTRAFAST_FAILBACK_PROVIDER",
+    ] as const;
+    const original = variables.map((name) => [name, process.env[name]] as const);
+    for (const name of variables) delete process.env[name];
+    try {
+      const laya = new FakeClient(response(0.2, "laya-test"));
+      const jev = new FakeClient(response(0.9, "jev-test"));
+      const policy = new DualPolicy({ primary: "laya", layaClient: laya, jevClient: jev });
+
+      const decision = await policy.decide(SNAPSHOT, "Open the report", []);
+
+      expect(decision.provider).toBe("laya");
+      expect(jev.calls).toBe(0);
+    } finally {
+      for (const [name, value] of original) {
+        if (value === undefined) delete process.env[name];
+        else process.env[name] = value;
+      }
+    }
+  });
+
   it("keeps a weak primary result when no secondary provider is configured", async () => {
     const variables = [
       "ULTRAFAST_PRIMARY_PROVIDER",

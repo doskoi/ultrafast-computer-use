@@ -401,10 +401,6 @@ function probabilityFromEnvironment(variable: string, fallback: number): number 
   return value;
 }
 
-function otherProvider(provider: DecisionProviderName): DecisionProviderName {
-  return provider === "laya" ? "jev" : "laya";
-}
-
 function providerFailureMessage(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
 }
@@ -432,7 +428,7 @@ export class DualPolicy {
     this.options = options;
     this.primary = options.primary
       ?? providerFromEnvironment(process.env.ULTRAFAST_PRIMARY_PROVIDER, "ULTRAFAST_PRIMARY_PROVIDER", "jev");
-    const defaultSecondary: SecondaryProviderName = this.primary === "jev" ? null : otherProvider(this.primary);
+    const defaultSecondary: SecondaryProviderName = null;
     this.secondary = options.secondary !== undefined
       ? options.secondary
       : secondaryFromEnvironment(
