@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { resolve, sep } from "node:path";
 
 import { snapshotFromAccessibility } from "./ax.js";
-import { DualPolicy, type DualPolicyOptions, type SystemOneClientLike } from "./policy.js";
+import { JevPolicy, type SystemOneClientLike } from "./policy.js";
 import { OPERATIONS, type HistoryEntry } from "./types.js";
 
 export const REQUEST_VERSION = "jev-computer-use.request.v1";
@@ -73,13 +73,12 @@ export function parseDecisionRequest(value: unknown): DecisionRequest {
 export async function decideRequest(
   request: DecisionRequest,
   client?: SystemOneClientLike,
-  policyOptions?: DualPolicyOptions,
 ): Promise<Record<string, unknown>> {
+  if (arguments[2] !== undefined) {
+    throw new TypeError("Provider options are no longer supported; use a Jev client or ordinary local Computer Use reasoning");
+  }
   const snapshot = snapshotFromAccessibility(request.app, request.accessibilityText);
-  const policy = new DualPolicy({
-    ...policyOptions,
-    ...(client === undefined ? {} : { layaClient: client }),
-  });
+  const policy = new JevPolicy(client);
   try {
     const decision = await policy.decide(snapshot, request.goal, request.history);
     return {
@@ -93,16 +92,13 @@ export async function decideRequest(
       decision,
     };
   } finally {
-    if (client === undefined && policyOptions?.layaClient === undefined && policyOptions?.jevClient === undefined) {
-      policy.close();
-    }
+    if (client === undefined) policy.close();
   }
 }
 
 export async function decideRequestFile(
   requestFile: string,
   client?: SystemOneClientLike,
-  policyOptions?: DualPolicyOptions,
 ): Promise<Record<string, unknown>> {
   const resolvedRequest = resolve(requestFile);
   const tempRoots = [tmpdir(), "/tmp", "/private/tmp"].map((root) => `${resolve(root)}${sep}`);
@@ -110,12 +106,15 @@ export async function decideRequestFile(
     throw new TypeError("request file must be inside the system temporary directory");
   }
   try {
+    if (arguments[2] !== undefined) {
+      throw new TypeError("Provider options are no longer supported; use a Jev client or ordinary local Computer Use reasoning");
+    }
     const metadata = await lstat(resolvedRequest);
     if (!metadata.isFile() || metadata.isSymbolicLink()) throw new TypeError("request file must be a regular file");
     if ((metadata.mode & 0o077) !== 0) throw new TypeError("request file permissions must be 0600 or stricter");
     const raw = await readFile(resolvedRequest);
     if (raw.byteLength > MAX_REQUEST_BYTES) throw new RangeError("request file exceeds 2 MiB");
-    return await decideRequest(parseDecisionRequest(JSON.parse(raw.toString("utf8"))), client, policyOptions);
+    return await decideRequest(parseDecisionRequest(JSON.parse(raw.toString("utf8"))), client);
   } finally {
     await unlink(resolvedRequest).catch(() => undefined);
   }

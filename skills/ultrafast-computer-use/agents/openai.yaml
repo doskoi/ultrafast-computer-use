@@ -1,6 +1,6 @@
 interface:
   display_name: "Ultrafast Computer Use"
-  short_description: "Use Jev with local Laya failback for Computer Use actions"
-  default_prompt: "Navigate this interface with automatic Jev action selection and local Laya failback."
+  short_description: "Use Jev with ordinary local Computer Use reasoning as fallback"
+  default_prompt: "Navigate this interface with Jev indexed action selection when permitted, otherwise use ordinary local Computer Use reasoning."
 policy:
   allow_implicit_invocation: true

@@ -4,7 +4,7 @@ import { AgentDesktopComputer } from "./agent-desktop.js";
 import { ComputerUseAssistant } from "./assistant.js";
 import { decideRequestFile, RESPONSE_VERSION } from "./bridge.js";
 import { CuaDriverComputer } from "./cua-driver.js";
-import { DecisionProvidersUnavailableError, DualPolicy } from "./policy.js";
+import { JevPolicy } from "./policy.js";
 import type { ComputerDriver } from "./sky.js";
 
 function write(value: unknown): void {
@@ -97,7 +97,7 @@ function driverFor(options: RunOptions): ComputerDriver {
 }
 
 async function runAssistant(options: RunOptions): Promise<void> {
-  const policy = new DualPolicy();
+  const policy = new JevPolicy();
   try {
     const assistant = new ComputerUseAssistant(driverFor(options), policy);
     if (!options.execute) {
@@ -139,11 +139,7 @@ async function main(): Promise<void> {
 try {
   await main();
 } catch (error) {
-  const providerUnavailable = error instanceof DecisionProvidersUnavailableError
-    || (error instanceof Error && (
-      error.message.startsWith("Local Laya")
-      || error.message.startsWith("TypeSafe Jev")
-    ));
+  const providerUnavailable = error instanceof Error && error.message.startsWith("TypeSafe Jev");
   write({
     version: RESPONSE_VERSION,
     ok: false,

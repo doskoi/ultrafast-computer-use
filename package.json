@@ -16,7 +16,6 @@
   },
   "files": [
     "dist",
-    "python",
     "README.md",
     "LICENSE"
   ],

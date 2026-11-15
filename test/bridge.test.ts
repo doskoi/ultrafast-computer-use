@@ -2,9 +2,10 @@ import { chmod, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
+  decideRequest,
   decideRequestFile,
   parseDecisionRequest,
   REQUEST_VERSION,
@@ -17,6 +18,8 @@ const REQUEST = {
   goal: "Open the report",
   accessibilityText: 'AXButton "Open report" [element_index=17]',
 };
+
+afterEach(() => vi.unstubAllEnvs());
 
 class FakeClient implements SystemOneClientLike {
   async systemOne() {
@@ -50,8 +53,48 @@ describe("decision bridge", () => {
 
     const response = await decideRequestFile(requestFile, new FakeClient());
 
-    expect(response).toMatchObject({ ok: true, decision: { operation: "CLICK", targetIndex: 17 } });
+    expect(response).toMatchObject({ ok: true, decision: { provider: "jev", operation: "CLICK", targetIndex: 17 } });
     await expect(readFile(requestFile)).rejects.toMatchObject({ code: "ENOENT" });
+    await rm(directory, { recursive: true });
+  });
+
+  it("rejects a removed provider-options argument instead of ignoring a local-only request", async () => {
+    const jev = new FakeClient();
+    const call = vi.spyOn(jev, "systemOne");
+    await expect(Reflect.apply(decideRequest, undefined, [
+      parseDecisionRequest(REQUEST), jev, { primary: "laya", secondary: null },
+    ])).rejects.toThrow("Provider options are no longer supported");
+    expect(call).not.toHaveBeenCalled();
+  });
+
+  it("deletes a temp request when obsolete options are rejected", async () => {
+    const directory = await mkdtemp(join(tmpdir(), "ultrafast-rejected-options-"));
+    const requestFile = join(directory, "request.json");
+    await writeFile(requestFile, JSON.stringify(REQUEST), { mode: 0o600 });
+    try {
+      await expect(Reflect.apply(decideRequestFile, undefined, [
+        requestFile, undefined, { primary: "laya" },
+      ])).rejects.toThrow("Provider options are no longer supported");
+      await expect(readFile(requestFile)).rejects.toMatchObject({ code: "ENOENT" });
+    } finally {
+      await rm(directory, { recursive: true });
+    }
+  });
+
+  it("rejects stale routing and deletes the request before any client call", async () => {
+    vi.stubEnv("ULTRAFAST_PRIMARY_PROVIDER", "laya");
+    const directory = await mkdtemp(join(tmpdir(), "ultrafast-rejected-routing-"));
+    const requestFile = join(directory, "request.json");
+    await writeFile(requestFile, JSON.stringify(REQUEST), { mode: 0o600 });
+    const jev = new FakeClient();
+    const call = vi.spyOn(jev, "systemOne");
+    try {
+      await expect(decideRequestFile(requestFile, jev)).rejects.toThrow("only supports jev");
+      expect(call).not.toHaveBeenCalled();
+      await expect(readFile(requestFile)).rejects.toMatchObject({ code: "ENOENT" });
+    } finally {
+      await rm(directory, { recursive: true });
+    }
   });
 
   it("rejects non-temporary request paths", async () => {

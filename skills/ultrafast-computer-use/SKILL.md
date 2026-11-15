@@ -1,6 +1,6 @@
 ---
 name: ultrafast-computer-use
-description: Use the configured Jev/Laya provider for indexed next-action selection whenever any Codex agent or subagent operates a native app or browser through OpenAI Computer Use, defaulting to Jev with local Laya failback.
+description: Use Jev for indexed next-action selection whenever any Codex agent or subagent operates a native app or browser through OpenAI Computer Use, with ordinary local Computer Use reasoning when Jev is unavailable or unsuitable.
 ---
 
 # Ultrafast Computer Use
@@ -9,8 +9,9 @@ This is a machine-wide Computer Use policy, not a preference scoped to one conve
 agent and subagent that discovers this skill should invoke it automatically when it operates a UI through
 `cua_repl`; the user does not need to name the skill in each task.
 
-Use **JEV (`jev`) by default**, with local Laya as the one-time failback. A task-specific local-only override does
-not change this default for other tasks. Preserve explicit caller overrides and the sensitive-data boundary below.
+Use **JEV (`jev`) by default** when the data boundary permits remote inference. For local-only tasks, skip this
+provider and use ordinary local Computer Use reasoning. Never turn an obsolete or local-only provider request
+into a remote Jev request.
 
 Use the configured Ultrafast provider as the first semantic action selector when Computer Use exposes a useful accessibility tree. Keep
 `cua_repl` responsible for observation, freshness checks, execution, and confirmations. Ultrafast only selects from the
@@ -21,8 +22,11 @@ current indexed candidates.
 - Prefer a purpose-built connector, API, or CLI when it can complete the task without UI automation.
 - Do not send screenshots, coordinates, selectors, commands, arbitrary input text, or credentials to Ultrafast.
 - Do not send an accessibility tree containing private messages, private files, financial, medical, legal, HR,
-  precise-location, account, authentication, or other sensitive content unless the user explicitly authorized that
-  specific data to be sent to a model. Use ordinary local Computer Use reasoning instead.
+  precise-location, account, authentication, or other sensitive content to remote Jev. Use ordinary local
+  Computer Use reasoning.
+- Any data authorization is limited to the exact tree and recipient and remains subject to all Skill data
+  restrictions above. Local-only authorization never permits remote transmission or restores a removed
+  integration; it does not create an exception for Jev.
 - Ultrafast decisions never authorize an action. Apply the normal Computer Use confirmation policy at action time.
 - Ultrafast's first action space is read-only navigation. If it returns `BLOCKED`, or the task needs typing or another
   excluded operation, continue with normal Computer Use reasoning and its confirmation rules.
@@ -72,17 +76,15 @@ current indexed candidates.
    /Users/sj/.codex/skills/ultrafast-computer-use/scripts/decide-file.sh /tmp/ultrafast-computer-use-REQUEST.json
    ```
 
-   The script invokes the configured primary provider, deletes the request file, and can fail back once to the
-   secondary provider. Configure `LAYA_MLX_PATH`, `LAYA_MLX_PYTHON`, and `LAYA_MLX_MODEL` before using the skill.
-   The default order is `jev -> laya`; switch it with `ULTRAFAST_PRIMARY_PROVIDER` and
-   `ULTRAFAST_SECONDARY_PROVIDER` (`none` disables failback). Jev is an optional remote provider and requires
+   The script invokes Jev and deletes the request file. Jev is the only decision provider and requires
    `TYPESAFE_API_KEY`; the script can load it from the machine-local `0600` file
    `~/.config/ultrafast/jev.env` (or `ULTRAFAST_JEV_ENV_FILE`). Treat exit 78 or an `ok:false` response as
-   Ultrafast unavailable and continue locally.
+   Ultrafast unavailable and continue with ordinary local Computer Use reasoning. An obsolete primary or
+   secondary provider setting is rejected before any remote request. Do not retry it with Jev by overriding
+   a local-only choice.
 5. Use an Ultrafast action only when `executionProbability >= 0.55`. Accept `DONE` only when
-   `operationProbability >= 0.55` and `completionProbability >= 0.85`. The dual policy may try its secondary
-   provider before returning a weak result; low-probability, malformed, unsupported, or failed decisions still
-   fall back to local reasoning.
+   `operationProbability >= 0.55` and `completionProbability >= 0.85`. Low-probability, malformed, unsupported,
+   or failed decisions fall back to ordinary local Computer Use reasoning.
 6. Immediately before execution, capture another full AX tree and compare its SHA-256 hash with the saved hash.
    If it changed, discard the decision and start again. If it matches, execute the selected `element_index` through
    the existing target binding, then observe the resulting state and verify progress.

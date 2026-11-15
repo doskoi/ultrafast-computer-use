@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { snapshotFromAccessibility } from "../src/ax.js";
-import { UltrafastPolicy, type SystemOneClientLike, type SystemOneResponse } from "../src/policy.js";
+import { JevPolicy, type SystemOneClientLike, type SystemOneResponse } from "../src/policy.js";
 
 const SNAPSHOT = snapshotFromAccessibility("Preview", `AXWindow "Reports"
   AXButton "Open report" [element_index=17] x=10 y=20
@@ -33,7 +33,7 @@ const OPERATIONS = {
   BLOCKED: 0.03,
 };
 
-describe("Ultrafast policy", () => {
+describe("Jev indexed decision policy", () => {
   it("selects the operation first, then asks only for the selected operation target", async () => {
     const client = new FakeClient({
       model: "ultrafast-test",
@@ -48,7 +48,7 @@ describe("Ultrafast policy", () => {
       },
     });
 
-    const decision = await new UltrafastPolicy(client).decide(SNAPSHOT, "Open the report", []);
+    const decision = await new JevPolicy(client).decide(SNAPSHOT, "Open the report", []);
 
     expect(client.calls).toHaveLength(2);
     expect(decision.operation).toBe("CLICK");
@@ -59,8 +59,8 @@ describe("Ultrafast policy", () => {
     expect(Object.keys(firstCall.questions)).toEqual(["operation", "goal_complete"]);
     const secondCall = client.calls[1] as { state: unknown; questions: Record<string, unknown> };
     expect(Object.keys(secondCall.questions)).toEqual(["click_target"]);
-    expect(String(secondCall.state)).toContain("17:");
-    expect(String(secondCall.state)).not.toContain("51:");
+    expect(secondCall.state).toMatchObject({ candidate_elements: [{ index: "17" }] });
+    expect((secondCall.state as { candidate_elements: unknown[] }).candidate_elements).toHaveLength(1);
     expect(JSON.stringify(firstCall.state)).not.toContain("x=10");
     expect(JSON.stringify(firstCall.state)).not.toContain("screenshot");
     const operationQuestion = firstCall.questions.operation as {
@@ -88,7 +88,7 @@ describe("Ultrafast policy", () => {
       },
     });
 
-    await expect(new UltrafastPolicy(client).decide(SNAPSHOT, "Open the report", []))
+    await expect(new JevPolicy(client).decide(SNAPSHOT, "Open the report", []))
       .rejects.toThrow("Invalid typed-decision choice response");
   });
 
@@ -101,7 +101,7 @@ describe("Ultrafast policy", () => {
       },
     });
 
-    const decision = await new UltrafastPolicy(client).decide(snapshot, "Open the report", []);
+    const decision = await new JevPolicy(client).decide(snapshot, "Open the report", []);
 
     expect(decision.operation).toBe("BLOCKED");
     expect(client.calls).toHaveLength(1);

@@ -39,7 +39,7 @@ export interface Decision {
   readonly latencyMs: number;
   readonly model: string;
   /** The decision engine that produced this result. */
-  readonly provider?: "laya" | "jev";
+  readonly provider?: "jev";
 }
 
 export interface HistoryEntry {

@@ -1,7 +1,7 @@
 # Ultrafast Computer Use Assistant
 
 这是一个独立、可复用的 Computer Use 导航库。它读取 OpenAI Computer Use 的无障碍树，把当前
-`element_index` 转成有限动作空间，再让配置的 Jev/Laya provider 判断下一步操作及目标。
+`element_index` 转成有限动作空间，再让远程 Jev provider 判断下一步操作及目标。
 
 设计参考 `browser-use/jev-ultrafast` 的
 [`1231850a`](https://github.com/browser-use/jev-ultrafast/tree/1231850a0bf1a0c0341fe408ef1668dbbfdfac46)：
@@ -12,52 +12,34 @@
 - 执行前再次读取完整页面，页面变化就拒绝使用旧索引。
 
 Ultrafast 不操作界面。Computer Use 负责观察和执行，Ultrafast 只从代码给出的当前候选里做语义判断。
-具体调用在 `DualPolicy.decide()`：默认只用远程 Jev；只有显式配置 Laya 时才启用 failback。两者都只负责语义判断，
-不会绕过 Computer Use 的执行确认。
+具体调用在 `JevPolicy.decide()`。Jev 只负责语义判断，不会绕过 Computer Use 的执行确认。
+Jev 不可用、结果概率不足或任务要求只在本地处理时，调用方继续使用普通本地 Computer Use 判断。
 
 ## 安装
 
-需要 Node.js 20 或更新版本，以及 Apple Silicon 上的 Python 3.11+、`uv` 和本地
-[`laya-mlx`](https://github.com/mizorewww/laya-mlx) checkout：
+需要 Node.js 20 或更新版本：
 
 ```bash
-cd /Users/sj/projects/laya-mlx
-uv sync
-
-# 机器级配置写入 ~/.config/ultrafast/laya.env；Computer Use skill 会自动加载它。
-export LAYA_MLX_PATH=/Users/sj/projects/laya-mlx
-export LAYA_MLX_PYTHON=/Users/sj/projects/laya-mlx/.venv/bin/python
-export LAYA_MLX_MODEL=aac6fef/laya-multilingual-mlx
-
 cd /Users/sj/projects/ultrafast-computer-use
 npm install
 npm run build
 ```
 
-`LAYA_MLX_PATH` 让 Python worker 能找到本地 checkout，`LAYA_MLX_PYTHON` 指定安装了
-`laya-mlx` 的 Python 环境。`LAYA_MLX_MODEL` 可以是本地 checkpoint 目录或 model ID；如果省略，默认
-使用 `aac6fef/laya-multilingual-mlx`，首次加载可能从 Hugging Face 下载权重。选择 Laya 时请求始终发给本地
-`laya-mlx` worker；要做到完全离线，保持 `ULTRAFAST_SECONDARY_PROVIDER=none`，先下载权重并使用本地目录。
+### Jev 配置与旧配置迁移
 
-### Dual provider
+Jev 是唯一的决策 provider，没有模型 provider 之间的 failback。`ULTRAFAST_PRIMARY_PROVIDER`
+可省略或设为 `jev`；`ULTRAFAST_SECONDARY_PROVIDER` 与兼容名称 `ULTRAFAST_FAILBACK_PROVIDER`
+可省略或设为 `none`、`off`、`disabled`。任何其它显式值都会在远程调用前报错，两个 secondary
+变量会分别检查，避免被另一个变量遮蔽。调用者传入的 provider 环境变量优先于 `jev.env`。
 
-默认只启用 `jev`，不配置 secondary。`ULTRAFAST_SECONDARY_PROVIDER` 未设置时没有 failback，
-也不会自动选择另一个 provider；需要本地回退时显式设置为 `laya`。主 provider 不可用、返回
-`BLOCKED`，或执行概率低于 `0.55` 时，只尝试一次显式配置的另一个 provider；如果 failback 也不可用，
-调用方继续走本地 Computer Use 判断。可以通过环境变量切换：
+Laya 的 Node/Python 接线、配置加载、`LayaClient`、`UltrafastPolicy`、`DualPolicy` 和相关
+options/types 已移除。代码调用改用现有的 `JevPolicy(client?, model?)`；文件桥接的第三个
+provider options 参数会明确拒绝。旧配置报错后应核对原来的本地处理要求，不能直接改为 Jev 重试。
+已安装的独立 Laya 程序、模型与历史报告、原始 benchmark 证据应保留。
 
-```bash
-export ULTRAFAST_PRIMARY_PROVIDER=jev
-# 不设置 SECONDARY：没有 failback
-# export ULTRAFAST_SECONDARY_PROVIDER=laya
-# 只使用本地 Laya：
-# export ULTRAFAST_PRIMARY_PROVIDER=laya
-# export ULTRAFAST_SECONDARY_PROVIDER=none
-```
-
-`ULTRAFAST_SECONDARY_PROVIDER=none` 可关闭 failback；也接受兼容名称
-`ULTRAFAST_FAILBACK_PROVIDER`。`ULTRAFAST_FALLBACK_THRESHOLD` 和
-`ULTRAFAST_COMPLETION_THRESHOLD` 分别控制弱操作与弱 DONE 结果何时切换。
+旧 `ULTRAFAST_FALLBACK_THRESHOLD` 与 `ULTRAFAST_COMPLETION_THRESHOLD` 仅控制已移除的
+provider 切换，不再适用。执行门槛仍由 `ComputerUseAssistant` 的 `minProbability` 和
+`completionThreshold` 控制，默认值保持 `0.55` 和 `0.85`。
 
 Jev 是 TypeSafe 远程 provider，需要 `TYPESAFE_API_KEY`，默认主用会把当前 AX 文本发送到该服务。
 不要把密钥提交到仓库或普通配置；
@@ -70,16 +52,13 @@ printf '%s\n' 'export TYPESAFE_API_KEY=...' > ~/.config/ultrafast/jev.env
 chmod 600 ~/.config/ultrafast/jev.env
 ```
 
-如果不希望把页面内容发送到远程服务，请显式设置 `ULTRAFAST_PRIMARY_PROVIDER=laya` 和
-`ULTRAFAST_SECONDARY_PROVIDER=none`；这样决策只在本地完成。
+如果任务要求本地处理，请跳过 Jev，直接使用普通本地 Computer Use 判断。
 
 ### Agent runtime configuration
 
 不要只在某个终端临时执行 `export`：已经启动的 Codex/ChatGPT 进程不会继承之后的 shell 环境。
-在本机创建 `~/.config/ultrafast/laya.env`，写入上述三个变量。安装的 skill 入口会在每次决策前
-显式加载这份文件；交互式登录 shell 也会加载它，因此 `ultrafast-computer-use` 和
-`ultrafast-android-assistant` 共用同一份 Laya 配置。可通过 `ULTRAFAST_LAYA_ENV_FILE` 指定其他
-配置文件。该文件只应保存本机路径和模型配置，不要放凭据。
+安装的 skill 入口只加载机器本地的 `jev.env`，也可通过 `ULTRAFAST_JEV_ENV_FILE` 指定该文件。
+配置应保持 `0600` 权限，不应提交到仓库。该入口不再读取 Laya 配置。
 
 ## 在 Computer Use 中使用
 
@@ -97,13 +76,13 @@ subagent，只要通过 Computer Use 操作原生应用或浏览器，就应自�
 `allow_implicit_invocation: true` 允许自动选择。
 
 skill 会把当前完整 AX 状态写入权限为 `0600` 的随机临时文件，再调用配置的决策 provider。
-默认选择 Jev 时，AX 文本会发送到 TypeSafe 远程服务。选择 Laya 时，worker 在同一次 Node 进程内复用模型；
-当前 `decide-file` 入口每次启动新的 Node 进程，这种复用不跨调用。请求结束后临时文件立即删除。
-含敏感内容的页面应显式设置 `ULTRAFAST_PRIMARY_PROVIDER=laya` 和 `ULTRAFAST_SECONDARY_PROVIDER=none`，
-让决策只在本地完成。
+调用 Jev 时，AX 文本会发送到 TypeSafe 远程服务，请求结束后临时文件立即删除。
+含敏感内容的 AX 树不发送到远程 Jev，改用普通本地 Computer Use 判断。任何数据授权只针对
+具体的树和接收方，并继续受 Skill 全部数据限制约束；本地处理授权不能扩大到远程传输，
+也不能恢复已移除的集成。
 
-主 provider 不可用或结果概率不足时，最多尝试一次配置的备用 provider；两者都无法给出有效结果，
-或页面已经变化时，skill 会回退到 Computer Use 自己的本地判断。Ultrafast 不会取代 Computer Use 的执行确认。
+Jev 不可用、无法给出有效结果、结果概率不足或页面已经变化时，skill 会回退到 Computer Use
+自己的本地判断。Ultrafast 不会取代 Computer Use 的执行确认。
 
 这个自动范围依赖 Codex 的全局指令和 skill 发现机制。其他不读取 `~/.codex/AGENTS.md` 与
 `~/.codex/skills` 的 Agent 运行时不会因此自动接入；它们需要在自己的 Computer Use 工具层调用本库。
@@ -114,13 +93,13 @@ skill 会把当前完整 AX 状态写入权限为 `0600` 的随机临时文件�
 `CuaComputer`，不要把业务项目耦合到这个仓库：
 
 ```js
-const { CuaComputer, ComputerUseAssistant, DualPolicy } =
+const { CuaComputer, ComputerUseAssistant, JevPolicy } =
   await import("file:///Users/sj/projects/ultrafast-computer-use/dist/index.js");
 
 const app = await cua.getApp("Preview");
 const assistant = new ComputerUseAssistant(
   new CuaComputer(app, "Preview"),
-  new DualPolicy(),
+  new JevPolicy(),
 );
 
 // 默认只建议，不执行。
@@ -178,7 +157,7 @@ ultrafast-computer-use run --driver agent-desktop \
 ```
 
 `run` 不加 `--execute` 时只返回建议；`--max-steps` 控制自动执行的上限，达到上限会返回
-`blocked`。两个驱动都走同一套 `DualPolicy`（默认只用 Jev；显式配置 Laya 才回退）。
+`blocked`。两个驱动都走同一套 `JevPolicy`；返回 `blocked` 或低概率结果后，由调用方继续本地判断。
 
 ## 执行边界
 
@@ -195,8 +174,8 @@ ultrafast-computer-use run --driver agent-desktop \
 
 真实 CUA 的无障碍树可能使用 `8 link Learn more` 这样的编号行，而不是带句点的编号。解析器只会把
 当前树中可确认的交互角色提升为候选；每次执行前仍必须重新抓取完整 AX 树并通过 freshness 校验。
-不要把包含私信、文件、账户或其它敏感内容的 AX 树发送给本地模型以外的服务，也不要把真实 AX dump
-或截图提交到 Git。
+包含私信、文件、账户或其它敏感内容的 AX 树不发送到远程 Jev，应使用普通本地 Computer Use 判断。
+具体树与接收方的授权仍须遵守上述数据限制。不要把真实 AX dump 或截图提交到 Git。
 
 ## 验证
 
