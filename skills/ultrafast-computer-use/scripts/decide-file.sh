@@ -3,7 +3,7 @@
 set -eu
 
 request_file="${1:-}"
-if [[ -z "$request_file" || $# -ne 1 ]]; then
+if [[ -z "$request_file" ]]; then
   print -r -- '{"version":"jev-computer-use.response.v1","ok":false,"error":{"code":"usage","message":"request file is required"}}'
   exit 64
 fi

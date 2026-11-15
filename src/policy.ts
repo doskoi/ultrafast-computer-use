@@ -181,7 +181,6 @@ class TypedDecisionPolicy {
   }
 
   async decide(snapshot: ComputerSnapshot, goal: string, history: readonly HistoryEntry[]): Promise<Decision> {
-    validateProviderEnvironment();
     if (!goal.trim()) throw new TypeError("goal must be a non-empty string");
     const targetOperations: readonly ElementOperation[] = [
       "CLICK", "SCROLL_DOWN", "SCROLL_UP", "SCROLL_LEFT", "SCROLL_RIGHT",
@@ -298,7 +297,6 @@ export class JevPolicy extends TypedDecisionPolicy {
     client?: SystemOneClientLike,
     model = process.env.TYPESAFE_DEFAULT_MODEL ?? "jev-latest",
   ) {
-    validateProviderEnvironment();
     super({
       model,
       createClient: () => new JevClient(model),
