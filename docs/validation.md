@@ -22,8 +22,8 @@ npm run check
 
 The tests cover accessibility-index extraction, read-only filtering, redaction, geometry removal, two-stage
 operation/target selection, strict probability validation, selected-branch validation, threshold handling,
-fresh-tree checks, temporary-file validation and deletion, obsolete-provider rejection without remote requests,
-and the `@oai/sky`, current `cua`, `cua-driver`, and `agent-desktop` adapters. Model calls and GUI execution
+fresh-tree checks, temporary-file validation and deletion, and the `@oai/sky`, current `cua`, `cua-driver`,
+and `agent-desktop` adapters. Model calls and GUI execution
 are mocked; these checks do not establish live model or UI behavior.
 
 ## Live checks
