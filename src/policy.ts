@@ -114,9 +114,15 @@ function validateProviderEnvironment(): void {
       "ULTRAFAST_PRIMARY_PROVIDER only supports jev; use ordinary local Computer Use reasoning for local-only requests",
     );
   }
-  // Validate both names even if one shadows the other. A stale local-only or
-  // removed-provider request must fail before any remote client is invoked.
-  for (const variable of ["ULTRAFAST_SECONDARY_PROVIDER", "ULTRAFAST_FAILBACK_PROVIDER"]) {
+  // Validate every accepted spelling even if one shadows another. A stale
+  // local-only or removed-provider request must fail before any remote client
+  // is invoked. ULTRAFAST_FAILBACK_PROVIDER is the deprecated misspelling kept
+  // so existing machine configuration still fails closed.
+  for (const variable of [
+    "ULTRAFAST_SECONDARY_PROVIDER",
+    "ULTRAFAST_FALLBACK_PROVIDER",
+    "ULTRAFAST_FAILBACK_PROVIDER",
+  ]) {
     const value = process.env[variable]?.trim().toLowerCase();
     if (value && !["none", "off", "disabled"].includes(value)) {
       throw new TypeError(`${variable} only supports none; use ordinary local Computer Use reasoning for fallback`);
