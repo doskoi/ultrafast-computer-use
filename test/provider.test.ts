@@ -13,7 +13,6 @@ const ROUTING = [
   "ULTRAFAST_PRIMARY_PROVIDER",
   "ULTRAFAST_SECONDARY_PROVIDER",
   "ULTRAFAST_FALLBACK_PROVIDER",
-  "ULTRAFAST_FAILBACK_PROVIDER",
 ];
 
 const REQUEST = { state: {}, questions: {} } as never;
@@ -30,12 +29,10 @@ describe("removed provider routing", () => {
   it.each([
     ["ULTRAFAST_SECONDARY_PROVIDER", "laya"],
     ["ULTRAFAST_FALLBACK_PROVIDER", "laya"],
-    ["ULTRAFAST_FAILBACK_PROVIDER", "laya"],
     ["ULTRAFAST_FALLBACK_PROVIDER", "local-only"],
   ])("rejects %s=%s even when the other names say none", async (variable, value) => {
     vi.stubEnv("ULTRAFAST_SECONDARY_PROVIDER", "none");
     vi.stubEnv("ULTRAFAST_FALLBACK_PROVIDER", "none");
-    vi.stubEnv("ULTRAFAST_FAILBACK_PROVIDER", "none");
     vi.stubEnv(variable, value);
 
     await expect(new JevClient().systemOne(REQUEST)).rejects.toThrow(`${variable} only supports none`);
@@ -46,7 +43,6 @@ describe("removed provider routing", () => {
     ["ULTRAFAST_SECONDARY_PROVIDER", " DISABLED "],
     ["ULTRAFAST_FALLBACK_PROVIDER", " DISABLED "],
     ["ULTRAFAST_FALLBACK_PROVIDER", "off"],
-    ["ULTRAFAST_FAILBACK_PROVIDER", " DISABLED "],
   ])("accepts %s=%s", async (variable, value) => {
     vi.stubEnv(variable, value);
     remoteCall.mockRejectedValueOnce(new Error("remote-called"));
