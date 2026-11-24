@@ -16,7 +16,7 @@ trap cleanup EXIT
 # Preserve explicit caller routing across the machine-local Jev configuration.
 # A local-only choice must not be overwritten with a remote provider.
 typeset -A caller_routing
-for routing_name in ULTRAFAST_PRIMARY_PROVIDER ULTRAFAST_SECONDARY_PROVIDER ULTRAFAST_FAILBACK_PROVIDER; do
+for routing_name in ULTRAFAST_PRIMARY_PROVIDER ULTRAFAST_SECONDARY_PROVIDER ULTRAFAST_FALLBACK_PROVIDER ULTRAFAST_FAILBACK_PROVIDER; do
   if (( ${+parameters[$routing_name]} )); then
     caller_routing[$routing_name]="${(P)routing_name}"
   fi

@@ -27,10 +27,13 @@ npm run build
 
 ### Jev 配置与旧配置迁移
 
-Jev 是唯一的决策 provider，没有模型 provider 之间的 failback。`ULTRAFAST_PRIMARY_PROVIDER`
-可省略或设为 `jev`；`ULTRAFAST_SECONDARY_PROVIDER` 与兼容名称 `ULTRAFAST_FAILBACK_PROVIDER`
-可省略或设为 `none`、`off`、`disabled`。任何其它显式值都会在远程调用前报错，两个 secondary
-变量会分别检查，避免被另一个变量遮蔽。调用者传入的 provider 环境变量优先于 `jev.env`。
+Jev 是唯一的决策 provider，没有模型 provider 之间的 fallback。`ULTRAFAST_PRIMARY_PROVIDER`
+可省略或设为 `jev`；`ULTRAFAST_SECONDARY_PROVIDER`、`ULTRAFAST_FALLBACK_PROVIDER`，以及早期
+配置里拼错的兼容名称 `ULTRAFAST_FAILBACK_PROVIDER`，可省略或设为 `none`、`off`、`disabled`。
+任何其它显式值都会在远程调用前报错，三个 secondary 变量会分别检查，避免被另一个变量遮蔽。
+`ULTRAFAST_FAILBACK_PROVIDER` 只用于兼容旧配置，新配置应使用 `ULTRAFAST_FALLBACK_PROVIDER`。
+调用者传入的 provider 环境变量优先于 `jev.env`；`jev.env` 本身不清空这些变量，继承到的值会进入
+上面的校验，不会被静默忽略。
 
 Laya 的 Node/Python 接线、配置加载、`LayaClient`、`UltrafastPolicy`、`DualPolicy` 和相关
 options/types 已移除。代码调用改用现有的 `JevPolicy(client?, model?)`；文件桥接的第三个
