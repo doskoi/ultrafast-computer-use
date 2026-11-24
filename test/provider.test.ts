@@ -43,11 +43,12 @@ describe("removed provider routing", () => {
   });
 
   it.each([
-    "ULTRAFAST_SECONDARY_PROVIDER",
-    "ULTRAFAST_FALLBACK_PROVIDER",
-    "ULTRAFAST_FAILBACK_PROVIDER",
-  ])("accepts a disabled %s spelling", async (variable) => {
-    vi.stubEnv(variable, " DISABLED ");
+    ["ULTRAFAST_SECONDARY_PROVIDER", " DISABLED "],
+    ["ULTRAFAST_FALLBACK_PROVIDER", " DISABLED "],
+    ["ULTRAFAST_FALLBACK_PROVIDER", "off"],
+    ["ULTRAFAST_FAILBACK_PROVIDER", " DISABLED "],
+  ])("accepts %s=%s", async (variable, value) => {
+    vi.stubEnv(variable, value);
     remoteCall.mockRejectedValueOnce(new Error("remote-called"));
 
     await expect(new JevClient().systemOne(REQUEST)).rejects.toThrow("remote-called");
