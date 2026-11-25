@@ -22,19 +22,24 @@ const SCROLLABLE = /\b(?:AXScrollArea|scrollable|scroll area|scrollview|scroll v
 const PASSWORD = /\b(?:AXSecureTextField|secure text|password|密码|口令)\b/i;
 
 export class ReadOnlySafetyPolicy {
+  // The write vocabulary is shared with ultrafast-android-assistant. Keep both lists in
+  // the same shape so the two assistants answer the same label the same way.
   static readonly blockedText = new RegExp([
     [
       "购买", "支付", "付款", "下单", "交易", "订阅", "关注", "取消关注", "删除", "注销",
       "退出登录", "保存", "提交", "确认", "确定", "发送", "发布", "上传", "安装", "更新",
-      "登录", "注册", "授权", "同意", "拒绝", "开启", "关闭", "修改密码", "绑定", "兑换", "领取",
-    ].map(escapeRegex).join("|"),
+      "登录", "注册", "授权", "同意", "拒绝", "修改密码",
+    ].map(escapeRegex).join("|") + "|(?<!已)(?:分享|预约|预订|兑换|领取|绑定|开启|关闭)",
     `\\b(?:${[
-      "buy", "pay", "purchase", "checkout", "order", "trade", "subscribe", "follow", "unfollow",
-      "delete", "remove", "logout", "save", "submit", "confirm", "send", "post", "publish", "upload",
-      "install", "update", "login", "log in", "sign in", "register", "authorize", "allow", "deny",
-      "accept", "agree", "change password", "share", "book", "reserve",
-    ].map(escapeRegex).join("|")})\\b`,
-  ].join("|"), "i");
+      "buy", "pay", "purchase", "checkout", "trade", "subscribe", "follow", "unfollow",
+      "delete", "remove", "logout", "save", "favorite", "submit", "confirm", "send", "publish",
+      "upload", "install", "login", "log in", "sign in", "register", "authorize", "allow", "deny",
+      "accept", "agree", "change password", "place order", "book now",
+      "log out", "sign out", "unsubscribe", "enable", "disable", "bind", "redeem", "claim",
+    ].map(escapeToken).join("|")})(?![A-Za-z0-9])`,
+    `(?<=["“])(?:share|book|reserve|update|post|order|toggle)(?=["”…])`,
+    `(?:^|·[ \\t]*)[ \\t]*\\d+[ \\t]+(?:AX)?\\w+[ \\t]+(?:share|book|reserve|update|post|order|toggle)[ \\t]*(?:,|$)`,
+  ].join("|"), "im");
 
   allows(description: string): boolean {
     return !PASSWORD.test(description) && !ReadOnlySafetyPolicy.blockedText.test(description);
@@ -43,6 +48,10 @@ export class ReadOnlySafetyPolicy {
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function escapeToken(value: string): string {
+  return escapeRegex(value).replace(/ +/g, "[ _-]?");
 }
 
 export function redact(value: string): string {
