@@ -37,8 +37,9 @@ export class ReadOnlySafetyPolicy {
       "accept", "agree", "change password", "place order", "book now",
       "log out", "sign out", "unsubscribe", "enable", "disable", "bind", "redeem", "claim",
     ].map(escapeToken).join("|")})(?![A-Za-z0-9])`,
-    `(?<=["“])(?:share|book|reserve|update|post|order|toggle)(?=["”])`,
-  ].join("|"), "i");
+    `(?<=["“])(?:share|book|reserve|update|post|order|toggle)(?=["”…])`,
+    `^[ \\t]*\\d+[ \\t]+(?:AX)?\\w+[ \\t]+(?:share|book|reserve|update|post|order|toggle)[ \\t]*(?:,|$)`,
+  ].join("|"), "im");
 
   allows(description: string): boolean {
     return !PASSWORD.test(description) && !ReadOnlySafetyPolicy.blockedText.test(description);
