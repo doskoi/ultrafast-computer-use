@@ -27,12 +27,14 @@ export class ReadOnlySafetyPolicy {
       "购买", "支付", "付款", "下单", "交易", "订阅", "关注", "取消关注", "删除", "注销",
       "退出登录", "保存", "提交", "确认", "确定", "发送", "发布", "上传", "安装", "更新",
       "登录", "注册", "授权", "同意", "拒绝", "开启", "关闭", "修改密码", "绑定", "兑换", "领取",
+      "分享", "预约", "预订",
     ].map(escapeRegex).join("|"),
     `\\b(?:${[
       "buy", "pay", "purchase", "checkout", "order", "trade", "subscribe", "follow", "unfollow",
       "delete", "remove", "logout", "save", "submit", "confirm", "send", "post", "publish", "upload",
       "install", "update", "login", "log in", "sign in", "register", "authorize", "allow", "deny",
       "accept", "agree", "change password", "share", "book", "reserve",
+      "log out", "sign out", "unsubscribe", "enable", "disable", "toggle", "bind", "redeem", "claim",
     ].map(escapeRegex).join("|")})\\b`,
   ].join("|"), "i");
 
