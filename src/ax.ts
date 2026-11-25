@@ -38,7 +38,7 @@ export class ReadOnlySafetyPolicy {
       "log out", "sign out", "unsubscribe", "enable", "disable", "bind", "redeem", "claim",
     ].map(escapeToken).join("|")})(?![A-Za-z0-9])`,
     `(?<=["“])(?:share|book|reserve|update|post|order|toggle)(?=["”…])`,
-    `^[ \\t]*\\d+[ \\t]+(?:AX)?\\w+[ \\t]+(?:share|book|reserve|update|post|order|toggle)[ \\t]*(?:,|$)`,
+    `(?:^|·[ \\t]*)[ \\t]*\\d+[ \\t]+(?:AX)?\\w+[ \\t]+(?:share|book|reserve|update|post|order|toggle)[ \\t]*(?:,|$)`,
   ].join("|"), "im");
 
   allows(description: string): boolean {

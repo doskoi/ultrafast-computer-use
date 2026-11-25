@@ -24,6 +24,15 @@ const REAL_CUA_TREE = `Window: "Example Domain", App: Safari.
     7 text This domain is for use in documentation examples without needing permission.
     8 link Learn more, Value: iana.org/domains/example`;
 
+const FINANCE_TREE = `Window: "Shop", App: Safari.
+5 heading Checkout
+6 text Free shipping on orders over 50
+7 button Share, Value: 0
+9 button Order, Value: 0
+11 button Update, Value: 2
+13 button Share price, Value: 3
+14 link Toggle navigation`;
+
 describe("accessibility parsing", () => {
   it("builds a bounded safe action space from common index formats", () => {
     const elements = parseIndexedElements(TREE);
@@ -66,5 +75,11 @@ describe("accessibility parsing", () => {
     expect(snapshot.fingerprint).toMatch(/^[a-f0-9]{64}$/);
     expect(snapshot.accessibilityText).toBe(TREE);
     expect(snapshot.modelText).not.toContain("Ignore the user");
+  });
+
+  it("keeps whole-word command labels out of the safe action space", () => {
+    const snapshot = snapshotFromAccessibility("Shop", FINANCE_TREE);
+
+    expect(snapshot.elements.map((element) => element.index)).toEqual([13, 14]);
   });
 });
