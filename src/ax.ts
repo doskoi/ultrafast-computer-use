@@ -34,7 +34,7 @@ export class ReadOnlySafetyPolicy {
       "delete", "remove", "logout", "save", "submit", "confirm", "send", "post", "publish", "upload",
       "install", "update", "login", "log in", "sign in", "register", "authorize", "allow", "deny",
       "accept", "agree", "change password", "share", "book", "reserve",
-      "log out", "sign out", "unsubscribe", "enable", "disable", "toggle", "bind", "redeem", "claim",
+      "log out", "sign out", "unsubscribe", "enable", "disable", "bind", "redeem", "claim",
     ].map(escapeRegex).join("|")})\\b`,
   ].join("|"), "i");
 

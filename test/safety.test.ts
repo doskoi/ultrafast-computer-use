@@ -12,7 +12,6 @@ describe("read-only safety policy", () => {
     "Log out",
     "Enable notifications",
     "Disable notifications",
-    "Toggle favorite",
     "Redeem code",
     "Claim reward",
     "Bind account",
@@ -30,7 +29,14 @@ describe("read-only safety policy", () => {
     },
   );
 
-  it.each(["Open report", "Learn more", "8 link Learn more", "AXLink Contact", "Search"])(
+  it.each([
+    "Open report",
+    "Learn more",
+    "8 link Learn more",
+    "AXLink Contact",
+    "Search",
+    'AXButton "Toggle navigation"',
+  ])(
     "keeps the read-only navigation %s",
     (description) => {
       expect(policy.allows(description)).toBe(true);
