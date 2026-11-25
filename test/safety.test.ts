@@ -17,6 +17,9 @@ describe("read-only safety policy", () => {
     "Bind account",
     "Change password",
     "Share report",
+    'AXButton "Sign Out"',
+    "sign_out",
+    "Sign-Out",
     "AXSecureTextField Password",
   ])("blocks %s", (description) => {
     expect(policy.allows(description)).toBe(false);
@@ -36,6 +39,8 @@ describe("read-only safety policy", () => {
     "AXLink Contact",
     "Search",
     'AXButton "Toggle navigation"',
+    "已预约",
+    "已分享",
   ])(
     "keeps the read-only navigation %s",
     (description) => {
